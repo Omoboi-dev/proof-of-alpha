@@ -56,7 +56,10 @@ contract IdentityRegistry is ERC721URIStorage, IIdentityRegistry {
 
     function _mintAgent(address to, string memory agentURI) internal returns (uint256 agentId) {
         agentId = _nextAgentId++;
-        _safeMint(to, agentId);
+        // _mint (not _safeMint): agents are frequently owned by contracts (multisigs,
+        // factories) that don't implement onERC721Received, and we want no untrusted
+        // callback during registration.
+        _mint(to, agentId);
         if (bytes(agentURI).length != 0) {
             _setTokenURI(agentId, agentURI);
         }

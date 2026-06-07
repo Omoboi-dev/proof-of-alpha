@@ -31,7 +31,10 @@ contract ReputationRegistry is IReputationRegistry {
     error SelfFeedbackNotAllowed();
     error FeedbackIndexOutOfRange();
 
+    error ZeroIdentityRegistry();
+
     constructor(address identityRegistry_) {
+        if (identityRegistry_ == address(0)) revert ZeroIdentityRegistry();
         _identity = IIdentityRegistry(identityRegistry_);
     }
 
@@ -53,8 +56,14 @@ contract ReputationRegistry is IReputationRegistry {
         if (valueDecimals > 18) revert InvalidValueDecimals(valueDecimals);
 
         // Reverts if the agent does not exist; also gives us the controllers to exclude.
+        // Block the owner, the operational wallet, AND any ERC-721 approved operator, so an
+        // owner can't self-rate through an approved address.
         address owner = _identity.ownerOf(agentId);
-        if (msg.sender == owner || msg.sender == _identity.getAgentWallet(agentId)) {
+        if (
+            msg.sender == owner || msg.sender == _identity.getAgentWallet(agentId)
+                || _identity.getApproved(agentId) == msg.sender
+                || _identity.isApprovedForAll(owner, msg.sender)
+        ) {
             revert SelfFeedbackNotAllowed();
         }
 

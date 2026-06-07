@@ -34,8 +34,10 @@ contract ValidationRegistry is IValidationRegistry {
     error UnknownRequest(bytes32 requestHash);
     error NotDesignatedValidator(bytes32 requestHash, address caller);
     error ResponseOutOfRange(uint8 response);
+    error ZeroIdentityRegistry();
 
     constructor(address identityRegistry_) {
+        if (identityRegistry_ == address(0)) revert ZeroIdentityRegistry();
         _identity = IIdentityRegistry(identityRegistry_);
     }
 

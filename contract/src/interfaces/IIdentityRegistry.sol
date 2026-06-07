@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
 /// @title IIdentityRegistry — ERC-8004 Identity Registry (subset)
 /// @notice Each agent is an ERC-721 token whose tokenId is the agentId.
 /// @dev Faithful to EIP-8004 v1 (https://eips.ethereum.org/EIPS/eip-8004).
-///      Only the members this project needs are declared here.
-interface IIdentityRegistry {
+///      Only the members this project needs are declared here. Extends IERC721 so
+///      `ownerOf` (and the rest of the NFT surface) is available through this interface.
+interface IIdentityRegistry is IERC721 {
     struct MetadataEntry {
         string metadataKey;
         bytes metadataValue;
@@ -28,6 +31,5 @@ interface IIdentityRegistry {
     /// @notice The operational wallet an agent signs/acts from (may differ from NFT owner).
     function getAgentWallet(uint256 agentId) external view returns (address);
 
-    /// @notice ERC-721 owner of the agentId (the controller of the agent).
-    function ownerOf(uint256 agentId) external view returns (address);
+    // ownerOf(uint256) is inherited from IERC721.
 }

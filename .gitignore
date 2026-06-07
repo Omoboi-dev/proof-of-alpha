@@ -1,0 +1,21 @@
+# Foundry
+contract/out/
+contract/cache/
+contract/broadcast/
+
+# Secrets — never commit
+.env
+*.env
+!.env.example
+
+# Node / frontend (added later)
+node_modules/
+frontend/dist/
+frontend/.next/
+
+# OS / editor
+.DS_Store
+*.log
+
+# Local-only strategy notes — never push (contains competitive analysis)
+IMPLEMENTATION.md

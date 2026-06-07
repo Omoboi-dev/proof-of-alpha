@@ -28,6 +28,9 @@ interface IIdentityRegistry is IERC721 {
 
     function setAgentURI(uint256 agentId, string calldata newURI) external;
 
+    /// @notice Set the agent's operational wallet (owner-only in the implementation).
+    function setAgentWallet(uint256 agentId, address wallet) external;
+
     /// @notice The operational wallet an agent signs/acts from (may differ from NFT owner).
     function getAgentWallet(uint256 agentId) external view returns (address);
 

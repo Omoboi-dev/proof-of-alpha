@@ -1,0 +1,6 @@
+{
+  "name": "Proof Of Alpha",
+  "description": "Capital flows to AI traders with on-chain-proven, impossible-to-fake track records. Platform displays protocol leaderboards, compound statistics, index allocation, and cryptographical architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

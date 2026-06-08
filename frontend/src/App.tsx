@@ -9,7 +9,7 @@ import { Page, IndexState } from './types';
 import { Check, Copy, ExternalLink, X, FileText, Loader2, AlertTriangle } from 'lucide-react';
 import { useProtocol } from './web3/useProtocol';
 import { useWallet } from './web3/useWallet';
-import { CONTRACTS, explorerAddress } from './web3/config';
+import { CONTRACTS, explorerAddress, hasRunner } from './web3/config';
 
 const fmtUsd = (n: number) => {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
@@ -98,6 +98,10 @@ export default function App() {
             totalCapitalAllocated={fmtUsd(stats.totalNav)}
             activeAgentsCount={stats.activeAgents}
             onSelectAgent={handleSelectAgent}
+            onRunRound={wallet.runRound}
+            connected={wallet.connected}
+            busy={wallet.busy}
+            canRun={hasRunner}
           />
         )}
 
@@ -108,6 +112,8 @@ export default function App() {
             connected={wallet.connected}
             usdgBalance={wallet.usdgBalance}
             onDeposit={handleAgentVaultDeposit}
+            onRunRound={wallet.runRound}
+            canRun={hasRunner}
             busy={wallet.busy}
           />
         )}

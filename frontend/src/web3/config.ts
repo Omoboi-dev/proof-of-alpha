@@ -18,21 +18,22 @@ export const EXPLORER = robinhoodTestnet.blockExplorers.default.url;
 export const explorerAddress = (addr: string) => `${EXPLORER}/address/${addr}`;
 export const explorerTx = (hash: string) => `${EXPLORER}/tx/${hash}`;
 
-// Deployed contract addresses (see contract/deployments.txt). USDG has 6 decimals.
-export const CONTRACTS = {
-  USDG: '0xFD154FcF3D576B7a40EbC0b834f2A9b10FC04635',
-  TSLA: '0x1f57f19e95d318CAC53E16bC98Ec364A6c859c5B',
-  AMZN: '0x2C92f232B45915dF58c5aFbbCEA3a245CfDefE12',
-  PLTR: '0x7b504225857eD969F8C4917fF21B49B6fD9603EE',
-  DEX: '0x953Aae7fCcbDfA78E8FD5edf137A254c1EFBb580',
-  IdentityRegistry: '0x41617bccb9d2999494834196c70233d755Db286f',
-  ReputationRegistry: '0xE6BA8cF462fb348228DBB438cc51C9c0D08c4866',
-  ValidationRegistry: '0x4A001353499667e2b830F15537B2B69C50A9Ec0A',
-  VaultFactory: '0x8F4e1d3C80d159D1B71FAC0EBf29f58C63CF36fC',
-  AllocationController: '0xb0B33b9b33B77c268b28680e937E28DbF3779c0B',
-} as const;
+// Deployed contract addresses — kept in deployed.json, which the deploy script rewrites on every
+// deploy so the frontend always points at the latest deployment. USDG has 6 decimals.
+import deployed from './deployed.json';
+export const CONTRACTS = deployed;
+export const hasRunner = !!deployed.AgentRunner && deployed.AgentRunner.length > 0;
 
 export const USDG_DECIMALS = 6;
+
+// Reverse lookup: token address -> display symbol (for reconstructing trades from events).
+export const SYMBOL_BY_ADDR: Record<string, string> = {
+  [CONTRACTS.USDG.toLowerCase()]: 'USDG',
+  [CONTRACTS.TSLA.toLowerCase()]: 'TSLA',
+  [CONTRACTS.AMZN.toLowerCase()]: 'AMZN',
+  [CONTRACTS.PLTR.toLowerCase()]: 'PLTR',
+};
+export const symbolOf = (addr: string) => SYMBOL_BY_ADDR[addr.toLowerCase()] ?? `${addr.slice(0, 6)}…`;
 
 // The public, read-only client used for every on-chain read in the app.
 export const publicClient = createPublicClient({

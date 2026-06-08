@@ -1,4 +1,4 @@
-import { TrendingUp, Cpu, Wallet, Shield } from 'lucide-react';
+import { TrendingUp, Cpu, Wallet, Shield, Info, Zap } from 'lucide-react';
 import { Agent } from '../types';
 
 interface LeaderboardTabProps {
@@ -8,6 +8,10 @@ interface LeaderboardTabProps {
   totalCapitalAllocated: string;
   activeAgentsCount: number;
   onSelectAgent: (id: string) => void;
+  onRunRound: (vault: string) => void;
+  connected: boolean;
+  busy: string | null;
+  canRun: boolean;
 }
 
 export default function LeaderboardTab({
@@ -17,6 +21,9 @@ export default function LeaderboardTab({
   totalCapitalAllocated,
   activeAgentsCount,
   onSelectAgent,
+  onRunRound,
+  busy,
+  canRun,
 }: LeaderboardTabProps) {
   return (
     <div className="flex flex-col gap-10 animate-fade-in">
@@ -31,6 +38,16 @@ export default function LeaderboardTab({
           Performance verified via cryptographic execution environments.
         </p>
       </section>
+
+      {/* Plain-language explainer so the table reads at a glance */}
+      <div className="flex items-start gap-3 bg-white/[0.01] border border-white/5 px-5 py-3 -mt-4 rounded-none max-w-4xl mx-auto w-full">
+        <Info size={14} className="text-[#d4af37] mt-0.5 flex-shrink-0" />
+        <p className="text-[11px] text-white/55 leading-relaxed font-sans">
+          Each agent is a non-custodial vault that trades tokenized stocks (TSLA, AMZN, PLTR) against USDG. The{' '}
+          <span className="text-[#d4af37] font-semibold">Alpha Score</span> is the real profit/loss its own vault measured on-chain — not a self-reported claim. Capital routes only to agents that beat breakeven (score 50+).
+          {canRun && <> Hover a row and press <span className="text-[#d4af37] font-semibold">Run</span> to make that agent trade a live on-chain round and watch its score move.</>}
+        </p>
+      </div>
 
       {/* Live Stat Cards (Bento Grid) */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -212,6 +229,18 @@ export default function LeaderboardTab({
                         {agent.status}
                       </span>
                     </div>
+
+                    {/* Live trading round button (hover to reveal) */}
+                    {canRun && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onRunRound(agent.vaultAddress); }}
+                        disabled={!!busy}
+                        title="Run a live on-chain trading round for this agent"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#d4af37] hover:bg-[#f1d279] text-black px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 disabled:opacity-50 z-30 shadow-[0_2px_12px_rgba(212,175,55,0.4)]"
+                      >
+                        <Zap size={11} /> {busy === 'Trading round' ? '…' : 'Run'}
+                      </button>
+                    )}
                   </div>
                 );
               })}

@@ -9,6 +9,14 @@ export interface EpochRecord {
   proofUrl?: string;
 }
 
+export interface TradeRecord {
+  side: 'buy' | 'sell';
+  symbol: string; // the stock symbol traded (e.g. TSLA)
+  stockAmount: number; // whole tokens
+  usdgAmount: number; // USDG spent (buy) or received (sell)
+  price: number; // USDG per whole token
+}
+
 export interface Agent {
   id: string;
   rank: string;
@@ -27,6 +35,8 @@ export interface Agent {
   winRate: string;
   strategyProfile: string;
   epochHistory: EpochRecord[];
+  trades?: TradeRecord[]; // real swaps reconstructed from on-chain Traded events
+  tradedSymbols?: string[]; // distinct stocks this agent traded
   targetWeight?: number;
   actualWeight?: number;
 }

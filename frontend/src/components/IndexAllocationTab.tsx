@@ -52,13 +52,28 @@ export default function IndexAllocationTab({
     color: PALETTE[i % PALETTE.length],
   }));
 
+  // ---- inline validation: never sign a transaction that can't succeed ----
+  const amtNum = parseFloat(amount);
+  const maxForMode = allocationMode === 'deposit' ? indexState.userBalance : indexState.userShares;
+  const amtEmptyOrZero = isNaN(amtNum) || amtNum <= 0;
+  const amtTooBig = !isNaN(amtNum) && amtNum > maxForMode;
+  const mainInvalid = amtEmptyOrZero || amtTooBig;
+  const mainMsg =
+    allocationMode === 'deposit' && indexState.userBalance <= 0
+      ? 'You have no USDG — open the wallet menu (top-right) and use the faucet first.'
+      : amtEmptyOrZero
+      ? 'Enter an amount greater than zero.'
+      : amtTooBig
+      ? allocationMode === 'deposit' ? 'Amount is more than your wallet balance.' : 'Amount is more than your deposited balance.'
+      : '';
+
+  const allocNum = parseFloat(allocAmount || String(idle));
+  const allocInvalid = idle <= 0 || isNaN(allocNum) || allocNum <= 0 || allocNum > idle;
+
   const handleActionClick = () => {
     if (!connected) { onConnect(); return; }
-    const val = parseFloat(amount);
-    if (isNaN(val) || val <= 0) { alert('Please enter a valid amount.'); return; }
-    if (allocationMode === 'deposit' && val > indexState.userBalance) { alert('Insufficient wallet USDG balance. Use the faucet in the wallet menu.'); return; }
-    if (allocationMode === 'withdraw' && val > indexState.userShares) { alert('Insufficient deposited balance.'); return; }
-    onAllocate(val, allocationMode === 'deposit');
+    if (mainInvalid) return;
+    onAllocate(amtNum, allocationMode === 'deposit');
   };
 
   return (
@@ -153,7 +168,7 @@ export default function IndexAllocationTab({
                   <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="bg-transparent border-none text-left font-mono text-sm font-semibold text-white focus:ring-0 p-0 w-full outline-none" placeholder="0.00" min="1" step="any" />
                   <span className="font-mono text-[10px] font-bold text-white/40 uppercase ml-4">USDG</span>
                 </div>
-                <button onClick={handleActionClick} disabled={!!busy} className="bg-[#d4af37] text-black hover:bg-[#f1d279] disabled:opacity-60 px-8 py-3.5 rounded-none font-mono text-[11px] font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 whitespace-nowrap shadow-[0_2px_12px_rgba(212,175,55,0.2)]">
+                <button onClick={handleActionClick} disabled={!!busy || (connected && mainInvalid)} className="bg-[#d4af37] text-black hover:bg-[#f1d279] disabled:opacity-40 disabled:cursor-not-allowed px-8 py-3.5 rounded-none font-mono text-[11px] font-bold uppercase tracking-widest transition-all duration-200 active:scale-95 whitespace-nowrap shadow-[0_2px_12px_rgba(212,175,55,0.2)]">
                   {!connected ? 'Connect Wallet' : busy ? `${busy}…` : allocationMode === 'deposit' ? 'Deposit USDG' : 'Withdraw USDG'}
                 </button>
               </div>
@@ -168,6 +183,9 @@ export default function IndexAllocationTab({
                   Max
                 </button>
               </div>
+              {connected && mainMsg && (
+                <p className="font-mono text-[10px] text-amber-400/90 uppercase tracking-wider leading-relaxed">⚠ {mainMsg}</p>
+              )}
               <p className="font-mono text-[9px] text-white/30 uppercase tracking-wider leading-relaxed">
                 No USDG? Connect a wallet and use the faucet in the wallet menu to mint demo USDG, then deposit here.
               </p>
@@ -190,22 +208,20 @@ export default function IndexAllocationTab({
                   <span className="font-mono text-[10px] font-bold text-white/40 uppercase ml-4">USDG</span>
                 </div>
                 <button
-                  onClick={() => {
-                    const v = parseFloat(allocAmount || String(idle));
-                    if (isNaN(v) || v <= 0) { alert('Enter an amount to allocate.'); return; }
-                    if (v > idle) { alert('Amount exceeds idle USDG. Deposit more, or lower the amount.'); return; }
-                    onAllocateCapital(v);
-                  }}
-                  disabled={!!busy || idle <= 0}
-                  className="bg-[#d4af37] text-black hover:bg-[#f1d279] disabled:opacity-50 px-6 py-3 rounded-none font-mono text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap"
+                  onClick={() => { if (allocInvalid) return; onAllocateCapital(allocNum); }}
+                  disabled={!!busy || allocInvalid}
+                  className="bg-[#d4af37] text-black hover:bg-[#f1d279] disabled:opacity-40 disabled:cursor-not-allowed px-6 py-3 rounded-none font-mono text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap"
                 >
-                  {busy === 'Allocate' ? 'Allocating…' : 'Allocate'}
+                  {idle <= 0 ? 'Nothing to allocate' : busy === 'Allocate' ? 'Allocating…' : 'Allocate'}
                 </button>
               </div>
               <div className="flex justify-between items-center mt-2 font-mono text-[10px] text-white/40 uppercase tracking-wider">
                 <span>Idle available: {idle.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDG</span>
                 <button onClick={() => setAllocAmount(Math.floor(idle).toString())} className="text-[#d4af37] hover:text-[#f1d279] font-bold tracking-widest">Max</button>
               </div>
+              {idle <= 0 && (
+                <p className="font-mono text-[10px] text-amber-400/90 uppercase tracking-wider leading-relaxed mt-2">⚠ The index has no idle capital yet. Deposit into the index above first, then allocate.</p>
+              )}
             </div>
           )}
         </div>

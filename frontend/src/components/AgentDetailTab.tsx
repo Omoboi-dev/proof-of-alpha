@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Shield, Copy, Check, ExternalLink, Coins } from 'lucide-react';
+import { ArrowLeft, Shield, Copy, Check, ExternalLink, Coins, Repeat, Info, Zap } from 'lucide-react';
 import { Agent } from '../types';
 import { explorerAddress } from '../web3/config';
 
@@ -9,6 +9,8 @@ interface AgentDetailTabProps {
   connected: boolean;
   usdgBalance: number;
   onDeposit: (vaultAddress: string, amount: number) => void;
+  onRunRound: (vaultAddress: string) => void;
+  canRun: boolean;
   busy: string | null;
 }
 
@@ -18,6 +20,8 @@ export default function AgentDetailTab({
   connected,
   usdgBalance,
   onDeposit,
+  onRunRound,
+  canRun,
   busy,
 }: AgentDetailTabProps) {
   const [copied, setCopied] = useState(false);
@@ -33,14 +37,22 @@ export default function AgentDetailTab({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Inline deposit validation (never submit a doomed tx).
+  const depNum = parseFloat(depositAmount);
+  const depInvalid = isNaN(depNum) || depNum <= 0 || depNum > usdgBalance;
+  const depMsg = usdgBalance <= 0
+    ? 'You have no USDG — use the faucet in the wallet menu first.'
+    : isNaN(depNum) || depNum <= 0
+    ? 'Enter an amount greater than zero.'
+    : depNum > usdgBalance
+    ? 'Amount is more than your wallet balance.'
+    : '';
+
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const amt = parseFloat(depositAmount);
-    if (isNaN(amt) || amt <= 0 || amt > usdgBalance) {
-      alert('Enter a valid amount within your wallet balance. Use the faucet to mint demo USDG.');
-      return;
-    }
-    onDeposit(agent.vaultAddress, amt);
+    if (!connected) { onDeposit(agent.vaultAddress, depNum); return; } // triggers connect in the hook
+    if (depInvalid) return;
+    onDeposit(agent.vaultAddress, depNum);
     setShowDepositModal(false);
   };
 
@@ -112,6 +124,46 @@ export default function AgentDetailTab({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* What this agent trades — real swaps from on-chain events */}
+          <div className="bg-white/[0.01] border border-white/5 p-6 rounded-none flex flex-col gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-sm font-serif serif-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Repeat size={15} className="text-[#d4af37]" /> What this agent trades
+              </h2>
+              {agent.tradedSymbols && agent.tradedSymbols.length > 0 && (
+                <span className="font-mono text-[10px] text-[#d4af37] bg-[#d4af37]/10 border border-[#d4af37]/15 px-2 py-1 uppercase tracking-widest">
+                  {agent.tradedSymbols.join(' · ')} ⇄ USDG
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-white/50 leading-relaxed font-sans">
+              This agent swaps <strong className="text-white">USDG</strong> (a digital dollar) for tokenized stocks and back again.
+              Its profit or loss is simply the USDG it ends with minus what it started with — measured on-chain by the vault itself.
+            </p>
+
+            {agent.trades && agent.trades.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {agent.trades.map((t, i) => (
+                  <div key={i} className="flex items-center justify-between bg-[#030303] border border-white/5 px-4 py-3 rounded-none font-mono text-[12px]">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${t.side === 'buy' ? 'bg-white/10 text-white/70' : 'bg-[#d4af37]/15 text-[#d4af37]'}`}>{t.side}</span>
+                      <span className="text-white">{t.stockAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t.symbol}</span>
+                      <span className="text-white/40">@ ${t.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <span className={t.side === 'buy' ? 'text-white/60' : 'text-[#d4af37] font-bold'}>
+                      {t.side === 'buy' ? '−' : '+'}${t.usdgAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDG
+                    </span>
+                  </div>
+                ))}
+                <p className="font-mono text-[10px] text-white/35 leading-relaxed mt-1">
+                  Bought low, sold {agent.returnRate >= 0 ? 'higher' : 'lower'} → realized {agent.returnRate >= 0 ? '+' : ''}{agent.returnRate.toFixed(1)}% in USDG. That difference is what produced the on-chain score of {agent.score}.
+                </p>
+              </div>
+            ) : (
+              <p className="font-mono text-[11px] text-white/30 uppercase tracking-widest">No trades recorded yet</p>
+            )}
+          </div>
+
           {/* Performance chart (real epochs) */}
           <div className="bg-white/[0.01] border border-white/5 p-6 rounded-none flex flex-col gap-4">
             <div className="flex justify-between items-center">
@@ -181,6 +233,12 @@ export default function AgentDetailTab({
                 <ExternalLink size={12} /> Vault on Explorer
               </a>
             </div>
+            <div className="px-6 py-2.5 bg-[#d4af37]/[0.04] border-b border-[#d4af37]/10 flex items-start gap-2">
+              <Info size={12} className="text-[#d4af37] mt-0.5 flex-shrink-0" />
+              <span className="font-mono text-[10px] text-white/50 leading-relaxed">
+                An <strong className="text-[#d4af37]">epoch</strong> is one round of trading: the vault snapshots starting cash, the agent trades, then returns to cash. End − start = realized P&L, mapped to a 0–100 score.
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[560px]">
                 <thead>
@@ -249,7 +307,17 @@ export default function AgentDetailTab({
           <div className="bg-white/[0.01] border border-white/5 hover:border-[#d4af37]/20 text-left rounded-none p-6 flex flex-col gap-4 relative overflow-hidden group transition-all shadow-xl">
             <h2 className="font-serif serif-display text-xs font-bold text-white/40 uppercase tracking-widest border-b border-white/5 pb-2">Vault Interaction</h2>
             <div className="flex flex-col gap-3 z-10 relative">
-              <button onClick={() => setShowDepositModal(true)} disabled={!!busy} className="w-full bg-[#d4af37] hover:bg-[#f1d279] disabled:opacity-60 text-black font-mono text-[11px] font-bold uppercase tracking-widest py-3.5 rounded-none transition-all duration-200 active:scale-95 text-center shadow-[0_2px_12px_rgba(212,175,55,0.2)]">
+              {canRun && (
+                <>
+                  <button onClick={() => onRunRound(agent.vaultAddress)} disabled={!!busy} className="w-full bg-[#d4af37] hover:bg-[#f1d279] disabled:opacity-60 text-black font-mono text-[11px] font-bold uppercase tracking-widest py-3.5 rounded-none transition-all duration-200 active:scale-95 text-center shadow-[0_2px_16px_rgba(212,175,55,0.3)] flex items-center justify-center gap-2">
+                    <Zap size={14} /> {busy === 'Trading round' ? 'Trading on-chain…' : 'Run Live Trading Round'}
+                  </button>
+                  <p className="font-mono text-[9px] text-white/35 leading-relaxed -mt-1">
+                    Fires a real on-chain epoch: the agent buys, the market moves, it sells, and the vault re-scores it live. Watch the score and trades below update.
+                  </p>
+                </>
+              )}
+              <button onClick={() => setShowDepositModal(true)} disabled={!!busy} className="w-full bg-transparent border border-white/15 hover:bg-white/5 disabled:opacity-60 text-white/80 font-mono text-[11px] font-bold uppercase tracking-widest py-3 rounded-none transition-all duration-200 active:scale-95 text-center">
                 Deposit Liquidity
               </button>
               <a href={explorerAddress(agent.vaultAddress)} target="_blank" rel="noreferrer" className="w-full bg-transparent border border-white/10 text-white/70 font-mono text-[10px] font-bold uppercase tracking-widest py-3 rounded-none hover:bg-white/5 transition-colors active:scale-95 text-center">
@@ -283,10 +351,14 @@ export default function AgentDetailTab({
                   <span className="font-mono text-[10px] font-bold text-white/40 uppercase ml-2 select-none">USDG</span>
                 </div>
               </div>
-              {!connected && <p className="text-[10px] text-[#d4af37]/80 font-mono uppercase tracking-wider">Connect your wallet to deposit.</p>}
+              {!connected ? (
+                <p className="text-[10px] text-[#d4af37]/80 font-mono uppercase tracking-wider">Connect your wallet to deposit.</p>
+              ) : depMsg ? (
+                <p className="text-[10px] text-amber-400/90 font-mono uppercase tracking-wider">⚠ {depMsg}</p>
+              ) : null}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button type="button" onClick={() => setShowDepositModal(false)} className="py-2.5 rounded-none bg-white/5 border border-white/15 text-white/60 hover:text-white font-mono text-[10px] font-bold uppercase transition-colors">Cancel</button>
-                <button type="submit" disabled={!!busy} className="py-2.5 rounded-none bg-[#d4af37] text-black font-mono text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-[#f1d279] disabled:opacity-60">
+                <button type="submit" disabled={!!busy || (connected && depInvalid)} className="py-2.5 rounded-none bg-[#d4af37] text-black font-mono text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-[#f1d279] disabled:opacity-40 disabled:cursor-not-allowed">
                   {busy ? `${busy}…` : 'Confirm Deposit'}
                 </button>
               </div>

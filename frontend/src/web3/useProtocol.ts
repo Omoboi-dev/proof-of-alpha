@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatUnits } from 'viem';
-import { publicClient, CONTRACTS, USDG_DECIMALS } from './config';
+import { publicClient, CONTRACTS, USDG_DECIMALS, symbolOf } from './config';
 import { factoryAbi, vaultAbi, validationAbi, identityAbi, controllerAbi } from './abis';
-import { Agent, EpochRecord } from '../types';
+import { Agent, EpochRecord, TradeRecord } from '../types';
 
 export interface ProtocolStats {
   totalValueManaged: number; // sum of all vault assets (USDG)
@@ -112,6 +112,27 @@ async function buildAgent(vault: `0x${string}`, index: number, minScore: number)
     epochHistory = [{ epoch: '1 (Current)', startCapital: '—', pnlPercentage: score - 50, pnlValue: `${score >= 50 ? '+' : '-'}—`, score }];
   }
 
+  // Reconstruct the agent's real swaps from on-chain Traded events.
+  let trades: TradeRecord[] = [];
+  const tradedSet = new Set<string>();
+  try {
+    const tradeLogs = await publicClient.getContractEvents({ address: vault, abi: vaultAbi, eventName: 'Traded', fromBlock: 0n });
+    trades = tradeLogs.map((l) => {
+      const a = l.args as { tokenIn?: string; tokenOut?: string; amountIn?: bigint; amountOut?: bigint };
+      const tokenIn = a.tokenIn ?? '';
+      const tokenOut = a.tokenOut ?? '';
+      const isBuy = tokenIn.toLowerCase() === CONTRACTS.USDG.toLowerCase(); // spending USDG to get stock
+      const stockAddr = isBuy ? tokenOut : tokenIn;
+      const symbol = symbolOf(stockAddr);
+      tradedSet.add(symbol);
+      const usdgAmount = Number(formatUnits((isBuy ? a.amountIn : a.amountOut) ?? 0n, USDG_DECIMALS));
+      const stockAmount = Number(formatUnits((isBuy ? a.amountOut : a.amountIn) ?? 0n, 18)); // mock stocks are 18-dec
+      return { side: isBuy ? 'buy' : 'sell', symbol, stockAmount, usdgAmount, price: stockAmount > 0 ? usdgAmount / stockAmount : 0 } as TradeRecord;
+    });
+  } catch {
+    trades = [];
+  }
+
   const slug = slugFromUri(uri as string);
   const meta = SLUG_META[slug] ?? { name: prettifySlug(slug) || `Agent #${agentId}`, strategy: 'A non-custodial AI trading vault. Performance is computed on-chain from realized P&L each epoch.' };
 
@@ -145,6 +166,8 @@ async function buildAgent(vault: `0x${string}`, index: number, minScore: number)
     winRate,
     strategyProfile: meta.strategy,
     epochHistory,
+    trades,
+    tradedSymbols: Array.from(tradedSet),
     targetWeight: weight, // raw score-weight; normalized later against the eligible set
     actualWeight: positionNav,
   };

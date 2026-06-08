@@ -25,6 +25,16 @@ export const vaultAbi = [
       { name: 'requestHash', type: 'bytes32', indexed: false },
     ],
   },
+  {
+    type: 'event',
+    name: 'Traded',
+    inputs: [
+      { name: 'tokenIn', type: 'address', indexed: true },
+      { name: 'tokenOut', type: 'address', indexed: true },
+      { name: 'amountIn', type: 'uint256', indexed: false },
+      { name: 'amountOut', type: 'uint256', indexed: false },
+    ],
+  },
 ] as const;
 
 export const validationAbi = [
@@ -55,6 +65,10 @@ export const controllerAbi = [
   { type: 'function', name: 'deposit', stateMutability: 'nonpayable', inputs: [{ type: 'uint256' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'withdraw', stateMutability: 'nonpayable', inputs: [{ type: 'uint256' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'allocate', stateMutability: 'nonpayable', inputs: [{ type: 'address[]' }, { type: 'uint256' }], outputs: [] },
+] as const;
+
+export const runnerAbi = [
+  { type: 'function', name: 'runEpoch', stateMutability: 'nonpayable', inputs: [{ type: 'address' }], outputs: [{ type: 'uint8' }] },
 ] as const;
 
 export const erc20Abi = [

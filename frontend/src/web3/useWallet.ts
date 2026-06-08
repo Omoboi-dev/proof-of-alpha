@@ -4,7 +4,7 @@ import { createWalletClient, custom, formatUnits, parseUnits } from 'viem';
 // Loose wallet-client surface (only writeContract is used) — avoids viem's deep generic instantiation.
 type WClient = { writeContract: (args: Record<string, unknown>) => Promise<`0x${string}`> };
 import { publicClient, robinhoodTestnet, CONTRACTS, USDG_DECIMALS } from './config';
-import { erc20Abi, controllerAbi, vaultAbi, factoryAbi } from './abis';
+import { erc20Abi, controllerAbi, vaultAbi, factoryAbi, runnerAbi } from './abis';
 
 type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown>; on?: (e: string, cb: (...a: unknown[]) => void) => void; removeListener?: (e: string, cb: (...a: unknown[]) => void) => void };
 const getEth = (): Eth | undefined => (typeof window !== 'undefined' ? (window as unknown as { ethereum?: Eth }).ethereum : undefined);
@@ -24,6 +24,7 @@ export interface WalletApi {
   withdrawIndex: (amount: number) => Promise<void>;
   depositVault: (vault: string, amount: number) => Promise<void>;
   allocate: (amount: number) => Promise<void>;
+  runRound: (vault: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -154,6 +155,15 @@ export function useWallet(onChange?: () => void): WalletApi {
     });
   }, [run]);
 
+  // Trigger one live, on-chain trading round for an agent (open→buy→move→sell→settle in 1 tx).
+  const runRound = useCallback(async (vault: string) => {
+    await run('Trading round', async (wc, acct) => wc.writeContract({
+      chain: robinhoodTestnet, account: acct,
+      address: CONTRACTS.AgentRunner as `0x${string}`, abi: runnerAbi, functionName: 'runEpoch',
+      args: [vault as `0x${string}`],
+    }));
+  }, [run]);
+
   // React to account/chain changes in the wallet.
   useEffect(() => {
     const eth = getEth();
@@ -163,5 +173,5 @@ export function useWallet(onChange?: () => void): WalletApi {
     return () => eth.removeListener?.('accountsChanged', onAccts);
   }, []);
 
-  return { hasWallet, connected: !!address, address, usdgBalance, userShares, busy, lastTxHash, connect, disconnect, faucet, depositIndex, withdrawIndex, depositVault, allocate, refresh };
+  return { hasWallet, connected: !!address, address, usdgBalance, userShares, busy, lastTxHash, connect, disconnect, faucet, depositIndex, withdrawIndex, depositVault, allocate, runRound, refresh };
 }

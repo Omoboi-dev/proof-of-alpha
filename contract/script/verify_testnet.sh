@@ -48,6 +48,7 @@ verify "$FACTORY" src/VaultFactory.sol:VaultFactory \
   "$(enc 'constructor(address,address,address,address,address[])' "$USDG" "$IDENTITY" "$VALIDATION" "$DEX" "$STOCKS")"
 verify "$CONTROLLER" src/AllocationController.sol:AllocationController \
   "$(enc 'constructor(address,address,address,uint8,uint64)' "$USDG" "$FACTORY" "$VALIDATION" 50 1)"
+verify "$RUNNER" src/AgentRunner.sol:AgentRunner "$(enc 'constructor(address,address)' "$DEX" "$USDG")"
 
 echo "==> Verifying the 3 agent vaults (constructor args read from chain)…"
 for V in "$VAULT_MOMENTUM" "$VAULT_STEADY" "$VAULT_MEANREV"; do

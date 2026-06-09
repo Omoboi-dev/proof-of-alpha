@@ -44,12 +44,31 @@ contract StrategyVault is ReentrancyGuard {
     mapping(address => uint256) public shares; // depositor => shares
     uint256 public totalShares;
 
+    /// @notice Accounted USDG = principal in/out adjusted by realized epoch P&L.
+    /// @dev This — NOT `usdg.balanceOf` — is the source of truth for share pricing and the
+    ///      score denominator. Using internal accounting makes both immune to donation
+    ///      manipulation (a direct USDG transfer can never inflate the score or a share price).
+    uint256 public totalManagedUSDG;
+
     address[] public stockTokens; // whitelisted tradable stock tokens
     mapping(address => bool) public isStock;
 
     bool public epochActive;
     uint256 public epochId; // increments each time an epoch starts
-    uint256 public epochStartUSDG; // USDG snapshot at epoch open
+    uint256 public epochStartUSDG; // managed-USDG snapshot at epoch open (score denominator)
+    /// @notice Realized P&L accumulated from USDG trade legs during the active epoch.
+    /// @dev Only swaps with a USDG leg move this; donations to the vault do not. At settle
+    ///      (vault flat) this equals the epoch's true realized trading P&L.
+    int256 public epochTradePnL;
+    /// @notice Accounted USDG currently available to spend on buys this epoch (ring-fence).
+    /// @dev Initialized to the epoch's starting managed USDG and adjusted by USDG trade legs.
+    ///      Buys cannot exceed it, so DONATED (un-accounted) USDG can never be deployed.
+    uint256 public tradableUSDG;
+    /// @notice Accounted units of each stock the vault actually bought (ring-fence).
+    /// @dev A sell can only move accounted stock, so DONATED stock can never be sold, and
+    ///      `_requireFlat` checks this ledger (not raw balanceOf) so a dust donation cannot
+    ///      brick the vault. Together with `tradableUSDG`, donations of ANY asset are inert.
+    mapping(address => uint256) public accountedStock;
 
     // ------------------------------- Events ------------------------------- //
 
@@ -72,6 +91,9 @@ contract StrategyVault is ReentrancyGuard {
     error TokenNotAllowed(address token);
     error SameToken();
     error NothingToWithdraw();
+    error ExceedsTradableUSDG(uint256 amountIn, uint256 available);
+    error ExceedsAccountedStock(address token, uint256 amountIn, uint256 available);
+    error InvalidStockToken(address token);
 
     constructor(
         address usdg_,
@@ -89,8 +111,14 @@ contract StrategyVault is ReentrancyGuard {
         agentId = agentId_;
         trader = trader_;
         for (uint256 i = 0; i < stockTokens_.length; i++) {
-            stockTokens.push(stockTokens_[i]);
-            isStock[stockTokens_[i]] = true;
+            address token = stockTokens_[i];
+            // A stock token must not be USDG, the zero address, or a duplicate — otherwise
+            // _requireFlat could permanently brick the vault or the set would be polluted.
+            if (token == address(0) || token == usdg_ || isStock[token]) {
+                revert InvalidStockToken(token);
+            }
+            stockTokens.push(token);
+            isStock[token] = true;
         }
     }
 
@@ -101,14 +129,16 @@ contract StrategyVault is ReentrancyGuard {
         if (epochActive) revert DepositsFrozen();
         if (amount == 0) revert ZeroAmount();
 
-        // Between epochs the vault holds only USDG, so total assets == USDG balance.
-        uint256 assetsBefore = usdg.balanceOf(address(this));
-        mintedShares = totalShares == 0 ? amount : (amount * totalShares) / assetsBefore;
+        // Share price uses internal accounting, not balanceOf (donation-proof). A fresh pool
+        // (no shares) OR a fully-wiped pool (managed == 0) mints 1:1 to avoid div-by-zero.
+        uint256 managed = totalManagedUSDG;
+        mintedShares = (totalShares == 0 || managed == 0) ? amount : (amount * totalShares) / managed;
         if (mintedShares == 0) revert ZeroAmount();
 
         // Effects before interaction (CEI).
         totalShares += mintedShares;
         shares[msg.sender] += mintedShares;
+        totalManagedUSDG = managed + amount;
 
         usdg.safeTransferFrom(msg.sender, address(this), amount);
         emit Deposited(msg.sender, amount, mintedShares);
@@ -121,12 +151,13 @@ contract StrategyVault is ReentrancyGuard {
         uint256 userShares = shares[msg.sender];
         if (userShares < shareAmount) revert NothingToWithdraw();
 
-        uint256 assets = usdg.balanceOf(address(this));
-        usdgOut = (shareAmount * assets) / totalShares;
+        uint256 managed = totalManagedUSDG;
+        usdgOut = (shareAmount * managed) / totalShares;
 
         // Effects before interaction (CEI).
         shares[msg.sender] = userShares - shareAmount;
         totalShares -= shareAmount;
+        totalManagedUSDG = managed - usdgOut;
 
         usdg.safeTransfer(msg.sender, usdgOut);
         emit Withdrawn(msg.sender, shareAmount, usdgOut);
@@ -150,8 +181,35 @@ contract StrategyVault is ReentrancyGuard {
         if (tokenIn != address(usdg) && !isStock[tokenIn]) revert TokenNotAllowed(tokenIn);
         if (tokenOut != address(usdg) && !isStock[tokenOut]) revert TokenNotAllowed(tokenOut);
 
+        // Ring-fence the INPUT: the agent may only move capital the vault accounts for, so
+        // donated USDG or donated stock can never enter the trade flow (or the score).
+        if (tokenIn == address(usdg)) {
+            if (amountIn > tradableUSDG) revert ExceedsTradableUSDG(amountIn, tradableUSDG);
+        } else {
+            if (amountIn > accountedStock[tokenIn]) {
+                revert ExceedsAccountedStock(tokenIn, amountIn, accountedStock[tokenIn]);
+            }
+        }
+
         IERC20(tokenIn).forceApprove(address(dex), amountIn);
         amountOut = dex.swap(tokenIn, tokenOut, amountIn, minAmountOut);
+        IERC20(tokenIn).forceApprove(address(dex), 0); // M2: leave no residual allowance
+
+        // Debit the input asset's accounted ledger.
+        if (tokenIn == address(usdg)) {
+            tradableUSDG -= amountIn;
+            epochTradePnL -= int256(amountIn); // spent USDG (buy)
+        } else {
+            accountedStock[tokenIn] -= amountIn;
+        }
+        // Credit the output asset's accounted ledger.
+        if (tokenOut == address(usdg)) {
+            tradableUSDG += amountOut;
+            epochTradePnL += int256(amountOut); // received USDG (sell)
+        } else {
+            accountedStock[tokenOut] += amountOut;
+        }
+
         emit Traded(tokenIn, tokenOut, amountIn, amountOut);
     }
 
@@ -159,16 +217,18 @@ contract StrategyVault is ReentrancyGuard {
 
     /// @notice Open a scoring epoch: snapshot starting USDG, freeze flows, and open this
     ///         vault's ERC-8004 validation request (vault names itself as validator).
-    function startEpoch(string calldata requestURI) external returns (bytes32 requestHash) {
+    function startEpoch(string calldata requestURI) external nonReentrant returns (bytes32 requestHash) {
         _onlyTraderOrOwner();
         if (epochActive) revert EpochIsActive();
         _requireFlat();
 
-        uint256 startUSDG = usdg.balanceOf(address(this));
+        uint256 startUSDG = totalManagedUSDG;
         if (startUSDG == 0) revert EmptyVault();
 
         epochId += 1;
         epochStartUSDG = startUSDG;
+        epochTradePnL = 0;
+        tradableUSDG = startUSDG; // ring-fence: only accounted capital can be traded
         epochActive = true;
 
         requestHash = epochRequestHash(epochId);
@@ -182,15 +242,22 @@ contract StrategyVault is ReentrancyGuard {
     ///         ValidationRegistry as the agent's validator.
     function settleEpoch(string calldata responseURI, bytes32 responseHash)
         external
+        nonReentrant
         returns (int256 realizedPnL, uint8 score)
     {
         _onlyTraderOrOwner();
         if (!epochActive) revert EpochNotActive();
         _requireFlat();
 
-        uint256 endUSDG = usdg.balanceOf(address(this));
-        realizedPnL = int256(endUSDG) - int256(epochStartUSDG);
+        // Realized P&L comes from the tracked USDG trade legs, never from balanceOf — so a
+        // direct USDG donation to the vault cannot inflate the score.
+        realizedPnL = epochTradePnL;
         score = _scoreFromPnL(realizedPnL, epochStartUSDG);
+
+        // Roll the epoch's realized P&L into the accounted principal (clamp at 0; a vault
+        // cannot owe more than it managed).
+        int256 newManaged = int256(totalManagedUSDG) + realizedPnL;
+        totalManagedUSDG = newManaged < 0 ? 0 : uint256(newManaged);
 
         epochActive = false;
 
@@ -201,8 +268,13 @@ contract StrategyVault is ReentrancyGuard {
 
     // -------------------------------- Views ------------------------------- //
 
-    /// @notice Total USDG assets (valid between epochs, when the vault is flat).
+    /// @notice Accounted USDG assets backing shares (donation-proof; not raw balanceOf).
     function totalAssets() external view returns (uint256) {
+        return totalManagedUSDG;
+    }
+
+    /// @notice Raw USDG token balance held by the vault (may exceed totalAssets if donated).
+    function usdgBalance() external view returns (uint256) {
         return usdg.balanceOf(address(this));
     }
 
@@ -227,11 +299,13 @@ contract StrategyVault is ReentrancyGuard {
         return uint8(uint256(score));
     }
 
-    /// @dev Revert unless the vault holds zero of every stock token (fully in USDG).
+    /// @dev Revert unless every accounted stock position is closed (vault fully in USDG).
+    ///      Uses the accounted ledger, NOT raw balanceOf, so a dust donation of a stock token
+    ///      cannot brick startEpoch/settleEpoch.
     function _requireFlat() internal view {
         for (uint256 i = 0; i < stockTokens.length; i++) {
-            uint256 bal = IERC20(stockTokens[i]).balanceOf(address(this));
-            if (bal != 0) revert VaultNotFlat(stockTokens[i], bal);
+            uint256 pos = accountedStock[stockTokens[i]];
+            if (pos != 0) revert VaultNotFlat(stockTokens[i], pos);
         }
     }
 

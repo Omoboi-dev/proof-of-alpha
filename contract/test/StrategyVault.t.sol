@@ -191,6 +191,42 @@ contract StrategyVaultTest is Test {
         assertEq(score, 50, "round-trip at flat price scores neutral; settle not bricked");
     }
 
+    function test_Attack_FirstDepositorShareInflation_Fails() public {
+        // Fresh vault with no deposits yet (setUp's vault already has Alice's deposit).
+        address[] memory stocks = new address[](1);
+        stocks[0] = address(tsla);
+        StrategyVault v = new StrategyVault(
+            address(usdg), address(identity), address(validation), address(dex), agentId, trader, stocks
+        );
+
+        // Attacker is the FIRST depositor with a single unit, then donates a huge amount
+        // directly to try to inflate the share price (classic ERC-4626 inflation attack).
+        usdg.mint(attacker, 1);
+        vm.startPrank(attacker);
+        usdg.approve(address(v), type(uint256).max);
+        uint256 attackerShares = v.deposit(1);
+        vm.stopPrank();
+        assertEq(attackerShares, 1);
+
+        usdg.mint(attacker, 1_000_000 * USDG);
+        vm.prank(attacker);
+        usdg.transfer(address(v), 1_000_000 * USDG); // donation
+
+        // Honest depositor still gets FAIR shares (priced off internal accounting, not balance).
+        usdg.mint(alice, 1_000 * USDG);
+        vm.startPrank(alice);
+        usdg.approve(address(v), type(uint256).max);
+        uint256 aliceShares = v.deposit(1_000 * USDG);
+        vm.stopPrank();
+        assertEq(aliceShares, 1_000 * USDG, "alice not diluted by the donation");
+
+        // Alice recovers her full principal; attacker cannot skim the donation via 1 share.
+        vm.prank(alice);
+        assertEq(v.withdraw(aliceShares), 1_000 * USDG, "alice recovers full principal");
+        vm.prank(attacker);
+        assertEq(v.withdraw(attackerShares), 1, "attacker's 1 share is worth 1, not the donation");
+    }
+
     // ----------------------- Access control / custody --------------------- //
 
     function test_NonCustodial_TraderHasNoSharesAndCannotWithdraw() public {

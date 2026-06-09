@@ -4,14 +4,18 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IMockDEX} from "../interfaces/IMockDEX.sol";
 
 /// @title MockDEX — deterministic, admin-priced swap venue
-/// @notice Swaps at a fixed admin-set price (no AMM curve), so we can simulate exact price
+/// @notice Swaps at a fixed owner-set price (no AMM curve), so we can simulate exact price
 ///         moves and crashes on demand for the demo. Must be pre-funded with liquidity of any
 ///         token it will pay out.
 /// @dev Price is "USDG (6 decimals) per 1 whole unit of the token". USDG's own price is 1e6.
-contract MockDEX is IMockDEX {
+///      `setPrice` is owner-gated so that on a public testnet an outsider cannot move prices to
+///      grief an agent's score (or a live demo). Non-production: a real deployment would use a
+///      real DEX / price oracle.
+contract MockDEX is IMockDEX, Ownable {
     using SafeERC20 for IERC20;
 
     address public immutable usdg;
@@ -20,13 +24,13 @@ contract MockDEX is IMockDEX {
     error NoPrice(address token);
     error Slippage(uint256 amountOut, uint256 minAmountOut);
 
-    constructor(address usdg_) {
+    constructor(address usdg_) Ownable(msg.sender) {
         usdg = usdg_;
         priceUSDG6[usdg_] = 1e6; // 1 USDG == 1.000000 USDG
     }
 
-    /// @notice Set the price of `token` in USDG (6 decimals) per 1 whole token.
-    function setPrice(address token, uint256 priceUSDG6_) external {
+    /// @notice Set the price of `token` in USDG (6 decimals) per 1 whole token. Owner only.
+    function setPrice(address token, uint256 priceUSDG6_) external onlyOwner {
         priceUSDG6[token] = priceUSDG6_;
     }
 

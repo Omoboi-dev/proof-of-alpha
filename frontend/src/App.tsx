@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import LeaderboardTab from './components/LeaderboardTab';
@@ -33,6 +33,13 @@ export default function App() {
     userBalance: wallet.usdgBalance,
     userShares: wallet.userShares,
   };
+
+  // Auto-dismiss the error banner after a few seconds.
+  useEffect(() => {
+    if (!wallet.error) return;
+    const t = setTimeout(() => wallet.clearError(), 7000);
+    return () => clearTimeout(t);
+  }, [wallet.error, wallet.clearError]);
 
   const handleSelectAgent = (agentId: string) => {
     setSelectedAgentId(agentId);
@@ -110,6 +117,7 @@ export default function App() {
             agent={selectedAgent}
             onBack={handleBackToLeaderboard}
             connected={wallet.connected}
+            userAddress={wallet.address}
             usdgBalance={wallet.usdgBalance}
             onDeposit={handleAgentVaultDeposit}
             onRunRound={wallet.runRound}
@@ -146,6 +154,15 @@ export default function App() {
       {wallet.busy && (
         <div className="fixed bottom-5 right-5 bg-[#050505] border border-[#d4af37]/35 text-[#d4af37] font-mono text-[10px] tracking-widest px-4 py-3 z-50 uppercase font-bold flex items-center gap-2 shadow-2xl">
           <Loader2 size={13} className="animate-spin" /> {wallet.busy}… confirm in wallet
+        </div>
+      )}
+
+      {/* Dismissable error banner (replaces browser alerts) */}
+      {wallet.error && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 max-w-md w-[90%] bg-red-950/90 border border-red-500/40 text-red-200 font-mono text-[11px] px-4 py-3 z-50 flex items-start gap-2 shadow-2xl backdrop-blur-sm">
+          <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+          <span className="flex-grow leading-relaxed">{wallet.error}</span>
+          <button onClick={wallet.clearError} className="text-red-300 hover:text-white flex-shrink-0" title="Dismiss"><X size={14} /></button>
         </div>
       )}
 

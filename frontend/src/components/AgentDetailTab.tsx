@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Shield, Copy, Check, ExternalLink, Coins, Repeat, Info, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Shield, Copy, Check, ExternalLink, Coins, Repeat, Info, Zap, Landmark } from 'lucide-react';
 import { Agent } from '../types';
-import { explorerAddress } from '../web3/config';
+import { explorerAddress, publicClient } from '../web3/config';
+import { vaultAbi } from '../web3/abis';
 
 interface AgentDetailTabProps {
   agent: Agent;
   onBack: () => void;
   connected: boolean;
+  userAddress: string | null;
   usdgBalance: number;
   onDeposit: (vaultAddress: string, amount: number) => void;
   onRunRound: (vaultAddress: string) => void;
@@ -18,12 +20,31 @@ export default function AgentDetailTab({
   agent,
   onBack,
   connected,
+  userAddress,
   usdgBalance,
   onDeposit,
   onRunRound,
   canRun,
   busy,
 }: AgentDetailTabProps) {
+  // Your stake in this specific vault = your vault shares' slice of its trading capital.
+  const [stake, setStake] = useState<number | null>(null);
+  useEffect(() => {
+    if (!userAddress) { setStake(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [sh, ts] = await Promise.all([
+          publicClient.readContract({ address: agent.vaultAddress as `0x${string}`, abi: vaultAbi, functionName: 'shares', args: [userAddress as `0x${string}`] }),
+          publicClient.readContract({ address: agent.vaultAddress as `0x${string}`, abi: vaultAbi, functionName: 'totalShares' }),
+        ]);
+        if (cancelled) return;
+        const shN = Number(sh); const tsN = Number(ts);
+        setStake(tsN > 0 ? (agent.capitalUsd ?? 0) * (shN / tsN) : 0);
+      } catch { if (!cancelled) setStake(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [userAddress, agent.vaultAddress, agent.capitalUsd, busy]);
   const [copied, setCopied] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('1000');
@@ -105,6 +126,34 @@ export default function AgentDetailTab({
               <span className="font-mono text-[9px] text-white/40 uppercase tracking-wider">Status</span>
               <span className={`font-mono text-[13px] font-bold uppercase tracking-widest mt-1.5 ${statusColor}`}>{agent.status}</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trading capital + your stake — where deposits land */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-none flex items-center gap-3">
+          <Landmark size={18} className="text-[#d4af37] flex-shrink-0" />
+          <div>
+            <div className="font-mono text-[9px] text-white/40 uppercase tracking-widest">Trading Capital</div>
+            <div className="font-mono text-lg font-bold text-white">${(agent.capitalUsd ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+            <div className="font-mono text-[8px] text-white/30 uppercase tracking-widest">what this agent trades with</div>
+          </div>
+        </div>
+        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-none flex items-center gap-3">
+          <Coins size={18} className="text-[#d4af37] flex-shrink-0" />
+          <div>
+            <div className="font-mono text-[9px] text-white/40 uppercase tracking-widest">Your Stake</div>
+            <div className="font-mono text-lg font-bold text-[#d4af37]">{connected && stake != null ? `$${stake.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}</div>
+            <div className="font-mono text-[8px] text-white/30 uppercase tracking-widest">{connected ? 'your deposits in this vault' : 'connect wallet to see'}</div>
+          </div>
+        </div>
+        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-none flex items-center gap-3">
+          <Repeat size={18} className="text-[#d4af37] flex-shrink-0" />
+          <div>
+            <div className="font-mono text-[9px] text-white/40 uppercase tracking-widest">Settled Epochs</div>
+            <div className="font-mono text-lg font-bold text-white">{agent.epochs}</div>
+            <div className="font-mono text-[8px] text-white/30 uppercase tracking-widest">trading rounds completed</div>
           </div>
         </div>
       </div>
@@ -354,7 +403,7 @@ export default function AgentDetailTab({
               {!connected ? (
                 <p className="text-[10px] text-[#d4af37]/80 font-mono uppercase tracking-wider">Connect your wallet to deposit.</p>
               ) : depMsg ? (
-                <p className="text-[10px] text-amber-400/90 font-mono uppercase tracking-wider">⚠ {depMsg}</p>
+                <p className="text-[10px] text-red-400 font-mono uppercase tracking-wider">⚠ {depMsg}</p>
               ) : null}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button type="button" onClick={() => setShowDepositModal(false)} className="py-2.5 rounded-none bg-white/5 border border-white/15 text-white/60 hover:text-white font-mono text-[10px] font-bold uppercase transition-colors">Cancel</button>

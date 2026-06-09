@@ -37,6 +37,7 @@ export interface Agent {
   epochHistory: EpochRecord[];
   trades?: TradeRecord[]; // real swaps reconstructed from on-chain Traded events
   tradedSymbols?: string[]; // distinct stocks this agent traded
+  capitalUsd?: number; // vault trading capital (totalAssets) as a precise number
   targetWeight?: number;
   actualWeight?: number;
 }

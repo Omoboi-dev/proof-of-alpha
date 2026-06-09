@@ -17,6 +17,8 @@ export interface WalletApi {
   userShares: number; // human USDG value of index shares (1 share ~ initial 1 USDG)
   busy: string | null; // current pending action label, or null
   lastTxHash: string | null;
+  error: string | null; // last error message (shown as a dismissable banner), or null
+  clearError: () => void;
   connect: () => Promise<void>;
   disconnect: () => void;
   faucet: (amount?: number) => Promise<void>;
@@ -34,6 +36,8 @@ export function useWallet(onChange?: () => void): WalletApi {
   const [userShares, setUserShares] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [lastTxHash, setLastTxHash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const clearError = useCallback(() => setError(null), []);
   const hasWallet = !!getEth();
 
   const walletClient = useCallback((): WClient => {
@@ -77,7 +81,7 @@ export function useWallet(onChange?: () => void): WalletApi {
 
   const connect = useCallback(async () => {
     const eth = getEth();
-    if (!eth) { alert('No Ethereum wallet found. Install MetaMask to interact.'); return; }
+    if (!eth) { setError('No Ethereum wallet found. Install MetaMask to interact.'); return; }
     setBusy('Connecting');
     try {
       const accts = (await eth.request({ method: 'eth_requestAccounts' })) as string[];
@@ -92,6 +96,7 @@ export function useWallet(onChange?: () => void): WalletApi {
   const run = useCallback(async (label: string, fn: (wc: WClient, acct: `0x${string}`) => Promise<`0x${string}`>) => {
     if (!address) { await connect(); return; }
     setBusy(label);
+    setError(null);
     try {
       await ensureChain();
       const wc = walletClient();
@@ -102,7 +107,9 @@ export function useWallet(onChange?: () => void): WalletApi {
       onChange?.();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      alert(`${label} failed: ${msg.split('\n')[0]}`);
+      // Surface a short, friendly reason instead of a raw revert dump.
+      const short = /user rejected|denied/i.test(msg) ? 'Transaction rejected in wallet.' : `${label} failed: ${msg.split('\n')[0].slice(0, 140)}`;
+      setError(short);
     } finally { setBusy(null); }
   }, [address, connect, ensureChain, walletClient, refresh, onChange]);
 
@@ -173,5 +180,5 @@ export function useWallet(onChange?: () => void): WalletApi {
     return () => eth.removeListener?.('accountsChanged', onAccts);
   }, []);
 
-  return { hasWallet, connected: !!address, address, usdgBalance, userShares, busy, lastTxHash, connect, disconnect, faucet, depositIndex, withdrawIndex, depositVault, allocate, runRound, refresh };
+  return { hasWallet, connected: !!address, address, usdgBalance, userShares, busy, lastTxHash, error, clearError, connect, disconnect, faucet, depositIndex, withdrawIndex, depositVault, allocate, runRound, refresh };
 }

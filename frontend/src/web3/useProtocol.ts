@@ -168,6 +168,7 @@ async function buildAgent(vault: `0x${string}`, index: number, minScore: number)
     epochHistory,
     trades,
     tradedSymbols: Array.from(tradedSet),
+    capitalUsd: totalAssetsNum,
     targetWeight: weight, // raw score-weight; normalized later against the eligible set
     actualWeight: positionNav,
   };

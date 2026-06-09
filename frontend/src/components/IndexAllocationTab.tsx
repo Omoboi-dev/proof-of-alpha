@@ -67,8 +67,15 @@ export default function IndexAllocationTab({
       ? allocationMode === 'deposit' ? 'Amount is more than your wallet balance.' : 'Amount is more than your deposited balance.'
       : '';
 
-  const allocNum = parseFloat(allocAmount || String(idle));
+  const allocNum = parseFloat(allocAmount); // empty -> NaN -> invalid (no silent "allocate all")
   const allocInvalid = idle <= 0 || isNaN(allocNum) || allocNum <= 0 || allocNum > idle;
+  const allocMsg = idle <= 0
+    ? 'The index has no idle capital yet. Deposit into the index above first, then allocate.'
+    : isNaN(allocNum) || allocNum <= 0
+    ? 'Enter an amount to allocate.'
+    : allocNum > idle
+    ? 'Amount is more than the idle capital available.'
+    : '';
 
   const handleActionClick = () => {
     if (!connected) { onConnect(); return; }
@@ -184,7 +191,7 @@ export default function IndexAllocationTab({
                 </button>
               </div>
               {connected && mainMsg && (
-                <p className="font-mono text-[10px] text-amber-400/90 uppercase tracking-wider leading-relaxed">⚠ {mainMsg}</p>
+                <p className="font-mono text-[10px] text-red-400 uppercase tracking-wider leading-relaxed">⚠ {mainMsg}</p>
               )}
               <p className="font-mono text-[9px] text-white/30 uppercase tracking-wider leading-relaxed">
                 No USDG? Connect a wallet and use the faucet in the wallet menu to mint demo USDG, then deposit here.
@@ -219,8 +226,8 @@ export default function IndexAllocationTab({
                 <span>Idle available: {idle.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDG</span>
                 <button onClick={() => setAllocAmount(Math.floor(idle).toString())} className="text-[#d4af37] hover:text-[#f1d279] font-bold tracking-widest">Max</button>
               </div>
-              {idle <= 0 && (
-                <p className="font-mono text-[10px] text-amber-400/90 uppercase tracking-wider leading-relaxed mt-2">⚠ The index has no idle capital yet. Deposit into the index above first, then allocate.</p>
+              {allocMsg && (
+                <p className="font-mono text-[10px] text-red-400 uppercase tracking-wider leading-relaxed mt-2">⚠ {allocMsg}</p>
               )}
             </div>
           )}

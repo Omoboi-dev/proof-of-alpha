@@ -6,7 +6,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IIdentityRegistry} from "./interfaces/IIdentityRegistry.sol";
 import {IValidationRegistry} from "./interfaces/IValidationRegistry.sol";
-import {IMockDEX} from "./interfaces/IMockDEX.sol";
+import {IMarket} from "./interfaces/IMarket.sol";
 
 /// @title StrategyVault — the "vault is the validator"
 /// @notice A non-custodial vault for ONE agent. Capital providers deposit USDG and receive
@@ -37,7 +37,7 @@ contract StrategyVault is ReentrancyGuard {
     address public immutable trader; // the only key allowed to call trade()
     IIdentityRegistry public immutable identity;
     IValidationRegistry public immutable validation;
-    IMockDEX public immutable dex;
+    IMarket public immutable dex;
 
     // ------------------------------- Storage ------------------------------ //
 
@@ -107,7 +107,7 @@ contract StrategyVault is ReentrancyGuard {
         usdg = IERC20(usdg_);
         identity = IIdentityRegistry(identity_);
         validation = IValidationRegistry(validation_);
-        dex = IMockDEX(dex_);
+        dex = IMarket(dex_);
         agentId = agentId_;
         trader = trader_;
         for (uint256 i = 0; i < stockTokens_.length; i++) {

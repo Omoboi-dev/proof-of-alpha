@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {StrategyVault} from "./StrategyVault.sol";
 import {IIdentityRegistry} from "./interfaces/IIdentityRegistry.sol";
 import {IValidationRegistry} from "./interfaces/IValidationRegistry.sol";
-import {IMockDEX} from "./interfaces/IMockDEX.sol";
+import {IMarket} from "./interfaces/IMarket.sol";
 
 /// @title VaultFactory — launches official, trustable StrategyVaults
 /// @notice One call (`launchAgent`) atomically: registers a new ERC-8004 agent, deploys its
@@ -22,7 +22,7 @@ import {IMockDEX} from "./interfaces/IMockDEX.sol";
 contract VaultFactory {
     IIdentityRegistry public immutable identity;
     IValidationRegistry public immutable validation;
-    IMockDEX public immutable dex;
+    IMarket public immutable dex;
     address public immutable usdg;
 
     /// @notice The shared set of tradable stock tokens every vault is launched with.
@@ -57,7 +57,7 @@ contract VaultFactory {
         usdg = usdg_;
         identity = IIdentityRegistry(identity_);
         validation = IValidationRegistry(validation_);
-        dex = IMockDEX(dex_);
+        dex = IMarket(dex_);
 
         // Validate the shared stock set up front so launches can't all silently revert later.
         for (uint256 i = 0; i < stockTokens_.length; i++) {

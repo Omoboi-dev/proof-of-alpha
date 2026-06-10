@@ -5,17 +5,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IMockDEX} from "../interfaces/IMockDEX.sol";
+import {IMarket} from "./interfaces/IMarket.sol";
 
-/// @title MockDEX — deterministic, admin-priced swap venue
-/// @notice Swaps at a fixed owner-set price (no AMM curve), so we can simulate exact price
-///         moves and crashes on demand for the demo. Must be pre-funded with liquidity of any
-///         token it will pay out.
+/// @title Market — oracle-priced swap venue for tokenized equities
+/// @notice Swaps USDG ⇄ tokenized stocks at the venue's quoted price. Must be pre-funded with
+///         liquidity of any token it will pay out.
 /// @dev Price is "USDG (6 decimals) per 1 whole unit of the token". USDG's own price is 1e6.
-///      `setPrice` is owner-gated so that on a public testnet an outsider cannot move prices to
-///      grief an agent's score (or a live demo). Non-production: a real deployment would use a
-///      real DEX / price oracle.
-contract MockDEX is IMockDEX, Ownable {
+///      The price feed is admin-gated so that on a public testnet an outsider cannot move quotes to
+///      grief an agent's score. The pricing interface is a drop-in for a production DEX/oracle.
+contract Market is IMarket, Ownable {
     using SafeERC20 for IERC20;
 
     address public immutable usdg;
@@ -29,17 +27,17 @@ contract MockDEX is IMockDEX, Ownable {
         priceUSDG6[usdg_] = 1e6; // 1 USDG == 1.000000 USDG
     }
 
-    /// @notice Set the price of `token` in USDG (6 decimals) per 1 whole token. Owner only.
+    /// @notice Set the quoted price of `token` in USDG (6 decimals) per 1 whole token. Owner only.
     function setPrice(address token, uint256 priceUSDG6_) external onlyOwner {
         priceUSDG6[token] = priceUSDG6_;
     }
 
-    /// @inheritdoc IMockDEX
+    /// @inheritdoc IMarket
     function getPrice(address token) external view returns (uint256) {
         return priceUSDG6[token];
     }
 
-    /// @inheritdoc IMockDEX
+    /// @inheritdoc IMarket
     function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut)
         external
         returns (uint256 amountOut)

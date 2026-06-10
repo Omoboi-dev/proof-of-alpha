@@ -9,7 +9,7 @@ import {VaultFactory} from "../src/VaultFactory.sol";
 import {StrategyVault} from "../src/StrategyVault.sol";
 import {AllocationController} from "../src/AllocationController.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockDEX} from "../src/mocks/MockDEX.sol";
+import {Market} from "../src/Market.sol";
 
 /// @title DeployDemo — one-shot, self-contained deployment of Proof of Alpha
 /// @notice Deploys the full stack and seeds 3 demo agents with REAL on-chain track records, so
@@ -17,7 +17,7 @@ import {MockDEX} from "../src/mocks/MockDEX.sol";
 ///         genuine epoch (deposit USDG → buy stock → price moves → sell → settle), and the
 ///         resulting realized-P&L score is written to the ValidationRegistry by the vault itself.
 ///
-/// @dev Self-contained on purpose: it deploys its OWN mock USDG + mock stocks + MockDEX so the
+/// @dev Self-contained on purpose: it deploys its OWN demo USDG + stock tokens + Market so the
 ///      demo is fully reproducible by judges and the deployer controls prices/liquidity. The
 ///      production target is canonical USDG on Robinhood Chain — to switch, replace `usdg` with
 ///      `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals) and point the DEX/stocks at
@@ -48,7 +48,7 @@ contract DeployDemo is Script {
         MockERC20 pltr = new MockERC20("Palantir", "PLTR", 18);
 
         // 2) Trading venue, priced + funded so agents can actually buy and sell.
-        MockDEX dex = new MockDEX(address(usdg));
+        Market dex = new Market(address(usdg));
         dex.setPrice(address(tsla), 100 * USDG);
         dex.setPrice(address(amzn), 100 * USDG);
         dex.setPrice(address(pltr), 100 * USDG);
@@ -92,7 +92,7 @@ contract DeployDemo is Script {
         console2.log("TSLA               ", address(tsla));
         console2.log("AMZN               ", address(amzn));
         console2.log("PLTR               ", address(pltr));
-        console2.log("MockDEX            ", address(dex));
+        console2.log("Market               ", address(dex));
         console2.log("IdentityRegistry   ", address(identity));
         console2.log("ReputationRegistry ", address(reputation));
         console2.log("ValidationRegistry ", address(validation));
@@ -113,7 +113,7 @@ contract DeployDemo is Script {
     function _seedAgent(
         VaultFactory factory,
         MockERC20 usdg,
-        MockDEX dex,
+        Market dex,
         MockERC20 stock,
         address deployer,
         string memory agentURI,

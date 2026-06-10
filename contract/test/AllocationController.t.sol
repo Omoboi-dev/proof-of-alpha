@@ -9,7 +9,7 @@ import {VaultFactory} from "../src/VaultFactory.sol";
 import {StrategyVault} from "../src/StrategyVault.sol";
 import {AllocationController} from "../src/AllocationController.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockDEX} from "../src/mocks/MockDEX.sol";
+import {Market} from "../src/Market.sol";
 
 /// @notice Proves the AllocationController routes pooled capital to PROVEN agents only:
 ///         official-vault filter, track-record + score gates, score-weighted sizing, and that
@@ -17,7 +17,7 @@ import {MockDEX} from "../src/mocks/MockDEX.sol";
 contract AllocationControllerTest is Test {
     IdentityRegistry identity;
     ValidationRegistry validation;
-    MockDEX dex;
+    Market dex;
     MockERC20 usdg;
     MockERC20 tsla;
     MockERC20 amzn;
@@ -41,7 +41,7 @@ contract AllocationControllerTest is Test {
 
         identity = new IdentityRegistry();
         validation = new ValidationRegistry(address(identity));
-        dex = new MockDEX(address(usdg));
+        dex = new Market(address(usdg));
         dex.setPrice(address(tsla), 100 * USDG);
         usdg.mint(address(dex), 100_000_000 * USDG);
         tsla.mint(address(dex), 10_000_000 * STOCK);

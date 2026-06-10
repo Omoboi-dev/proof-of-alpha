@@ -7,14 +7,14 @@ import {ValidationRegistry} from "../src/ValidationRegistry.sol";
 import {VaultFactory} from "../src/VaultFactory.sol";
 import {StrategyVault} from "../src/StrategyVault.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockDEX} from "../src/mocks/MockDEX.sol";
+import {Market} from "../src/Market.sol";
 
 /// @notice Proves VaultFactory launches official, fully-wired vaults atomically, and that the
 ///         `isOfficialVault` registry is a sound trust anchor (fake vaults are not official).
 contract VaultFactoryTest is Test {
     IdentityRegistry identity;
     ValidationRegistry validation;
-    MockDEX dex;
+    Market dex;
     MockERC20 usdg;
     MockERC20 tsla;
     MockERC20 amzn;
@@ -33,7 +33,7 @@ contract VaultFactoryTest is Test {
 
         identity = new IdentityRegistry();
         validation = new ValidationRegistry(address(identity));
-        dex = new MockDEX(address(usdg));
+        dex = new Market(address(usdg));
         dex.setPrice(address(tsla), 100 * USDG);
         dex.setPrice(address(amzn), 200 * USDG);
         usdg.mint(address(dex), 10_000_000 * USDG);

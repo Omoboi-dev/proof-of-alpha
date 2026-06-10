@@ -6,7 +6,7 @@ import {IdentityRegistry} from "../src/IdentityRegistry.sol";
 import {ValidationRegistry} from "../src/ValidationRegistry.sol";
 import {StrategyVault} from "../src/StrategyVault.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockDEX} from "../src/mocks/MockDEX.sol";
+import {Market} from "../src/Market.sol";
 
 /// @notice Proves the StrategyVault audit claims: non-custodial, donation-immune scoring,
 ///         and griefing-resistant liveness. Each "attack" test asserts the score / liveness
@@ -14,7 +14,7 @@ import {MockDEX} from "../src/mocks/MockDEX.sol";
 contract StrategyVaultTest is Test {
     IdentityRegistry identity;
     ValidationRegistry validation;
-    MockDEX dex;
+    Market dex;
     MockERC20 usdg;
     MockERC20 tsla;
     MockERC20 amzn;
@@ -37,7 +37,7 @@ contract StrategyVaultTest is Test {
 
         identity = new IdentityRegistry();
         validation = new ValidationRegistry(address(identity));
-        dex = new MockDEX(address(usdg));
+        dex = new Market(address(usdg));
 
         // Prices: TSLA $100, AMZN $200 (USDG has 6 decimals).
         dex.setPrice(address(tsla), 100 * USDG);

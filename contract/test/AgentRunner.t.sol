@@ -9,14 +9,14 @@ import {VaultFactory} from "../src/VaultFactory.sol";
 import {StrategyVault} from "../src/StrategyVault.sol";
 import {AgentRunner} from "../src/AgentRunner.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockDEX} from "../src/mocks/MockDEX.sol";
+import {Market} from "../src/Market.sol";
 
 /// @notice Proves AgentRunner executes a full epoch in ONE call: open -> buy -> move -> sell ->
 ///         settle, and the vault writes a realized-P&L score on-chain.
 contract AgentRunnerTest is Test {
     IdentityRegistry identity;
     ValidationRegistry validation;
-    MockDEX dex;
+    Market dex;
     MockERC20 usdg;
     MockERC20 tsla;
     VaultFactory factory;
@@ -31,7 +31,7 @@ contract AgentRunnerTest is Test {
         tsla = new MockERC20("Tesla", "TSLA", 18);
         identity = new IdentityRegistry();
         validation = new ValidationRegistry(address(identity));
-        dex = new MockDEX(address(usdg));
+        dex = new Market(address(usdg));
         usdg.mint(address(dex), 100_000_000 * USDG);
         tsla.mint(address(dex), 10_000_000 * STOCK);
 

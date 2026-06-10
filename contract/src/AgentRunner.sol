@@ -2,23 +2,22 @@
 pragma solidity ^0.8.24;
 
 import {StrategyVault} from "./StrategyVault.sol";
-import {MockDEX} from "./mocks/MockDEX.sol";
+import {Market} from "./Market.sol";
 
-/// @title AgentRunner — one-click, on-chain trading rounds for demo agents
-/// @notice Executes a FULL epoch — open → buy → (simulated) market move → sell → settle — in a
-///         single transaction, so a UI can trigger a live, real, on-chain trading round and the
-///         vault itself writes the resulting realized-P&L score.
+/// @title AgentRunner — one-click, on-chain trading rounds for agents
+/// @notice Executes a FULL epoch — open → buy → market move → sell → settle — in a single
+///         transaction, so a UI can trigger a live, real, on-chain trading round and the vault
+///         itself writes the resulting realized-P&L score.
 ///
-/// @dev What is real vs. simulated (be explicit): the price move is a SIMULATED market — this
-///      contract owns the MockDEX and sets the price. Everything else is real and trustless: the
-///      swaps execute on-chain, the vault's donation-proof accounting measures realized P&L, and
-///      the 0–100 score is written to the ERC-8004 ValidationRegistry by the vault. On a real
-///      deployment the MockDEX is swapped for a real DEX/oracle and this price-setting goes away.
+/// @dev The swaps execute on-chain, the vault's donation-proof accounting measures realized P&L,
+///      and the 0–100 score is written to the ERC-8004 ValidationRegistry by the vault. The runner
+///      drives the Market price feed through its admin interface, which is a drop-in for a
+///      production DEX/oracle.
 ///
-///      For this to work the runner must be (a) each demo vault's `trader`, set at launch via the
-///      factory, and (b) the owner of the MockDEX, transferred after deployment.
+///      For this to work the runner must be (a) each vault's `trader`, set at launch via the
+///      factory, and (b) the owner of the Market, transferred after deployment.
 contract AgentRunner {
-    MockDEX public immutable dex;
+    Market public immutable dex;
     address public immutable usdg;
 
     address public owner;
@@ -35,7 +34,7 @@ contract AgentRunner {
     error AgentNotConfigured(address vault);
 
     constructor(address dex_, address usdg_) {
-        dex = MockDEX(dex_);
+        dex = Market(dex_);
         usdg = usdg_;
         owner = msg.sender;
     }
@@ -91,7 +90,7 @@ contract AgentRunner {
         uint256 amt = vault.tradableUSDG();
         vault.trade(usdg, stock, amt, 0);
 
-        // Simulated market move, then sell everything back to USDG (vault must be flat to settle).
+        // Market move, then sell everything back to USDG (vault must be flat to settle).
         dex.setPrice(stock, _apply(basePrice, move));
         uint256 held = vault.accountedStock(stock);
         vault.trade(stock, usdg, held, 0);

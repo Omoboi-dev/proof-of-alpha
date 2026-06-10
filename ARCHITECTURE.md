@@ -254,7 +254,7 @@ MVP weights inflows rather than continuously rebalancing.
 
 **MVP (hackathon, must-ship):** 3 ERC-8004 registries · `StrategyVault` (deposit/withdraw/
 trade/settle, realized-PnL) · `VaultFactory` · `Market` + tokens · full Foundry test suite ·
-deploy+verify on Robinhood Chain · 3 demo agents · React leaderboard + one-vault deposit UI ·
+deploy+verify on Robinhood Chain · 5 demo agents · React leaderboard + one-vault deposit UI ·
 demo video showing a live price move → divergent scores → leaderboard reorders on-chain.
 
 **Vision (pitch as roadmap):** continuous score-weighted allocation; real RWA price oracle;

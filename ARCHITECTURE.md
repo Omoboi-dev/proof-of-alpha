@@ -77,9 +77,9 @@ the hackathon, realized-only is the airtight choice.)*
                 │ deposit USDG into the index                │ swaps via
                 ▼                                            ▼
    ┌─────────────────────────┐  reads scores     ┌────────────────────────────┐
-   │   AllocationController   │◀─────────────────│          MockDEX           │
-   │  routes pooled capital   │  from Validation  │  settable prices (demo:    │
-   │  to top-scored agents    │  Registry         │  trigger a live crash)     │
+   │   AllocationController   │◀─────────────────│          Market            │
+   │  routes pooled capital   │  from Validation  │  oracle-priced swap venue  │
+   │  to top-scored agents    │  Registry         │  (USDG ⇄ stocks)           │
    └─────────────────────────┘                   └────────────────────────────┘
 ```
 
@@ -119,7 +119,7 @@ uint256 public immutable agentId;         // ERC-8004 identity
 address public immutable agentWallet;     // the only address allowed to trade()
 IIdentityRegistry  public immutable identity;
 IValidationRegistry public immutable validation;
-IMockDEX public immutable dex;
+IMarket public immutable dex;
 
 mapping(address => uint256) public shares; // depositor → vault shares
 uint256 public totalShares;
@@ -153,11 +153,11 @@ your money; it can never take it.
 - **MVP simplification:** weight *new* inflows by score (no forced rebalancing of existing
   positions). Full continuous rebalancing is post-hackathon. *(See open question Q3.)*
 
-### 4.6 `MockDEX.sol` + mock/faucet tokens
-- Constant-price (admin-settable) swap venue: `setPrice(token, usdgPerToken)`,
-  `swap(tokenIn, tokenOut, amountIn, minOut)`. Lets us trigger a deterministic crash on
-  stage. Uses real Robinhood faucet stock tokens where available; otherwise simple ERC-20
-  mocks. (No AMM curve needed for the demo; price is a controlled input.)
+### 4.6 `Market.sol` + tokenized stock tokens
+- Oracle-priced (admin-settable) swap venue: `setPrice(token, usdgPerToken)`,
+  `swap(tokenIn, tokenOut, amountIn, minOut)`. The pricing interface is a drop-in for a
+  production DEX or price oracle. Uses Robinhood faucet stock tokens where available;
+  otherwise simple demo ERC-20s. (No AMM curve needed; price is a controlled input.)
 
 ---
 
@@ -232,12 +232,12 @@ AllocationController.rebalance()
 | Prompt-injection / compromised AI | Worst case the AI makes *bad trades* (reflected in a low score) — it cannot exceed `trade()`'s powers. (Optional: bolt on pre-trade risk caps later.) |
 | Reentrancy | `nonReentrant` + Checks-Effects-Interactions on deposit/withdraw/trade/settle. |
 | Score spoofing | Only the vault is the registered `validator` for its agentId; `validationResponse` enforces caller == validator. |
-| Wash-trading to pump score | Realized P&L through a fair DEX nets ~0 minus fees; can't manufacture gains. (MockDEX fee + price control documented as a demo-only simplification.) |
+| Wash-trading to pump score | Realized P&L through a fair DEX nets ~0 minus fees; can't manufacture gains. (Market price feed is admin-gated on the testnet, documented as a demo-only simplification.) |
 | Epoch flow gaming | Deposits/withdrawals frozen during an epoch → clean return denominator. |
 
 **Honest limitations (state them in the pitch):** open-position valuation needs a real oracle
-in production; MockDEX is a controlled stand-in for a real RWA market; allocation MVP weights
-inflows rather than continuously rebalancing.
+in production; the `Market` venue is an oracle-priced stand-in for a real RWA market; allocation
+MVP weights inflows rather than continuously rebalancing.
 
 ---
 
@@ -253,9 +253,9 @@ inflows rather than continuously rebalancing.
 ## 9. Scope — MVP vs vision
 
 **MVP (hackathon, must-ship):** 3 ERC-8004 registries · `StrategyVault` (deposit/withdraw/
-trade/settle, realized-PnL) · `VaultFactory` · `MockDEX` + tokens · full Foundry test suite ·
+trade/settle, realized-PnL) · `VaultFactory` · `Market` + tokens · full Foundry test suite ·
 deploy+verify on Robinhood Chain · 3 demo agents · React leaderboard + one-vault deposit UI ·
-demo video showing a live crash → divergent scores → leaderboard reorders on-chain.
+demo video showing a live price move → divergent scores → leaderboard reorders on-chain.
 
 **Vision (pitch as roadmap):** continuous score-weighted allocation; real RWA price oracle;
 drawdown-adjusted scoring; permissionless agent onboarding; compose with a pre-trade

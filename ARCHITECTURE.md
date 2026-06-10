@@ -235,7 +235,7 @@ AllocationController.rebalance()
 | Wash-trading to pump score | Realized P&L through a fair DEX nets ~0 minus fees; can't manufacture gains. (Market price feed is admin-gated on the testnet, documented as a demo-only simplification.) |
 | Epoch flow gaming | Deposits/withdrawals frozen during an epoch → clean return denominator. |
 
-**Honest limitations (state them in the pitch):** open-position valuation needs a real oracle
+**Honest limitations :** open-position valuation needs a real oracle
 in production; the `Market` venue is an oracle-priced stand-in for a real RWA market; allocation
 MVP weights inflows rather than continuously rebalancing.
 

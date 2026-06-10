@@ -156,7 +156,7 @@ The deploy script auto‑writes the new addresses to `frontend/src/web3/deployed
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 **53 Foundry tests**, multiple self‑audits. Highlights:
 - Donation attacks (USDG & stock) can't inflate a score or a share price.
@@ -179,7 +179,7 @@ Because there is no live order book for tokenized equities on the testnet, the `
 
 ---
 
-## 🧭 Roadmap
+##  Roadmap
 
 - Production DEX / oracle integration (drop‑in for the `Market` interface).
 - Emergency timeout‑gated liquidation so an abandoned agent can never lock depositor funds (today's MVP discloses this epoch‑lock limitation honestly).

@@ -4,6 +4,17 @@ import { Agent } from '../types';
 import { explorerAddress, publicClient } from '../web3/config';
 import { vaultAbi } from '../web3/abis';
 
+// Human "x ago" for a trade's block time; full timestamp shown on hover.
+const relTime = (ts?: number) => {
+  if (!ts) return '';
+  const s = Math.floor(Date.now() / 1000) - ts;
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+};
+const absTime = (ts?: number) => (ts ? new Date(ts * 1000).toLocaleString() : '');
+
 interface AgentDetailTabProps {
   agent: Agent;
   onBack: () => void;
@@ -196,15 +207,21 @@ export default function AgentDetailTab({
                   <div key={i} className="flex items-center justify-between bg-[#030303] border border-white/5 px-4 py-3 rounded-none font-mono text-[12px]">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${t.side === 'buy' ? 'bg-white/10 text-white/70' : 'bg-[#d4af37]/15 text-[#d4af37]'}`}>{t.side}</span>
+                      {i === 0 && <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest bg-[#d4af37]/15 text-[#d4af37] border border-[#d4af37]/25 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-pulse" /> Latest</span>}
                       <span className="text-white">{t.stockAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {t.symbol}</span>
                       <span className="text-white/40">@ ${t.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                     </div>
-                    <span className={t.side === 'buy' ? 'text-white/60' : 'text-[#d4af37] font-bold'}>
-                      {t.side === 'buy' ? '−' : '+'}${t.usdgAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDG
-                    </span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className={t.side === 'buy' ? 'text-white/60' : 'text-[#d4af37] font-bold'}>
+                        {t.side === 'buy' ? '−' : '+'}${t.usdgAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDG
+                      </span>
+                      {t.timestamp && (
+                        <span className="text-white/30 text-[9px] tracking-wider" title={absTime(t.timestamp)}>{relTime(t.timestamp)}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
-                <p className="font-mono text-[10px] text-white/35 leading-relaxed mt-1">
+                <p className="font-mono text-[10px] text-[#d4af37] leading-relaxed mt-1">
                   Bought low, sold {agent.returnRate >= 0 ? 'higher' : 'lower'} → realized {agent.returnRate >= 0 ? '+' : ''}{agent.returnRate.toFixed(1)}% in USDG. That difference is what produced the on-chain score of {agent.score}.
                 </p>
               </div>

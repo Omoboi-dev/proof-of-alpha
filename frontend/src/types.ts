@@ -15,6 +15,8 @@ export interface TradeRecord {
   stockAmount: number; // whole tokens
   usdgAmount: number; // USDG spent (buy) or received (sell)
   price: number; // USDG per whole token
+  timestamp?: number; // block time of the trade (unix seconds)
+  blockNumber?: number; // block the trade was mined in
 }
 
 export interface Agent {

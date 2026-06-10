@@ -127,6 +127,14 @@ async function buildAgent(vault: `0x${string}`, index: number, minScore: number)
   const tradedSet = new Set<string>();
   try {
     const tradeLogs = await publicClient.getContractEvents({ address: vault, abi: vaultAbi, eventName: 'Traded', fromBlock: 0n });
+
+    // Resolve a block timestamp for each trade (dedup block fetches — a one-tx epoch shares a block).
+    const uniqueBlocks = Array.from(new Set(tradeLogs.map((l) => l.blockNumber).filter((b): b is bigint => b != null)));
+    const blockTime = new Map<string, number>();
+    await Promise.all(uniqueBlocks.map(async (bn) => {
+      try { const b = await publicClient.getBlock({ blockNumber: bn }); blockTime.set(bn.toString(), Number(b.timestamp)); } catch { /* ignore */ }
+    }));
+
     trades = tradeLogs.map((l) => {
       const a = l.args as { tokenIn?: string; tokenOut?: string; amountIn?: bigint; amountOut?: bigint };
       const tokenIn = a.tokenIn ?? '';
@@ -137,7 +145,15 @@ async function buildAgent(vault: `0x${string}`, index: number, minScore: number)
       tradedSet.add(symbol);
       const usdgAmount = Number(formatUnits((isBuy ? a.amountIn : a.amountOut) ?? 0n, USDG_DECIMALS));
       const stockAmount = Number(formatUnits((isBuy ? a.amountOut : a.amountIn) ?? 0n, 18)); // stock tokens are 18-dec
-      return { side: isBuy ? 'buy' : 'sell', symbol, stockAmount, usdgAmount, price: stockAmount > 0 ? usdgAmount / stockAmount : 0 } as TradeRecord;
+      const blockNumber = l.blockNumber != null ? Number(l.blockNumber) : undefined;
+      const timestamp = l.blockNumber != null ? blockTime.get(l.blockNumber.toString()) : undefined;
+      return { side: isBuy ? 'buy' : 'sell', symbol, stockAmount, usdgAmount, price: stockAmount > 0 ? usdgAmount / stockAmount : 0, timestamp, blockNumber, logIndex: l.logIndex } as TradeRecord & { logIndex?: number };
+    });
+    // Newest trade first (by block, then position within the block).
+    trades.sort((x, y) => {
+      const xb = (x as TradeRecord & { logIndex?: number }); const yb = (y as TradeRecord & { logIndex?: number });
+      if ((yb.blockNumber ?? 0) !== (xb.blockNumber ?? 0)) return (yb.blockNumber ?? 0) - (xb.blockNumber ?? 0);
+      return (yb.logIndex ?? 0) - (xb.logIndex ?? 0);
     });
   } catch {
     trades = [];

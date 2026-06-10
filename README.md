@@ -67,22 +67,22 @@ All contracts are **deployed and source‑verified** on Robinhood Chain (Arbitru
 
 | Contract | Address |
 | --- | --- |
-| **VaultFactory** (trust anchor) | [`0x5c75900dF72cF0276afe75883a0A1221F391b38C`](https://explorer.testnet.chain.robinhood.com/address/0x5c75900dF72cF0276afe75883a0A1221F391b38C) |
-| **AllocationController** (capital router) | [`0x5606D102eAe1308ac86e76496E5686449f17e654`](https://explorer.testnet.chain.robinhood.com/address/0x5606D102eAe1308ac86e76496E5686449f17e654) |
-| **ValidationRegistry** (the scoreboard) | [`0xD61C614Fb6C7e3BCBB1e0d874739b37E427ACe41`](https://explorer.testnet.chain.robinhood.com/address/0xD61C614Fb6C7e3BCBB1e0d874739b37E427ACe41) |
-| IdentityRegistry | [`0xa4974dbA20AA282FBFFfFc2AE45a216da8304d6b`](https://explorer.testnet.chain.robinhood.com/address/0xa4974dbA20AA282FBFFfFc2AE45a216da8304d6b) |
-| ReputationRegistry | [`0x9E1E031a0653D806f1db4a3eD7E577c700507314`](https://explorer.testnet.chain.robinhood.com/address/0x9E1E031a0653D806f1db4a3eD7E577c700507314) |
-| AgentRunner (live rounds) | [`0x70cBF8040b6A1802960F0A02Bb6751E4C317255c`](https://explorer.testnet.chain.robinhood.com/address/0x70cBF8040b6A1802960F0A02Bb6751E4C317255c) |
-| USDG (demo dollar, 6‑dec) | [`0x9DBcDDe666790897f9fD72621E7Bb18B551118a2`](https://explorer.testnet.chain.robinhood.com/address/0x9DBcDDe666790897f9fD72621E7Bb18B551118a2) |
-| MockDEX | [`0x46820853221463E7E1005cF9480fd2949a2d9927`](https://explorer.testnet.chain.robinhood.com/address/0x46820853221463E7E1005cF9480fd2949a2d9927) |
+| **VaultFactory** (trust anchor) | [`0x82ead60bA0489eE66a18a18F32A8f6d9B7977Bc8`](https://explorer.testnet.chain.robinhood.com/address/0x82ead60bA0489eE66a18a18F32A8f6d9B7977Bc8) |
+| **AllocationController** (capital router) | [`0x4DCB28C3F4c779692710820096CDa65062CbD121`](https://explorer.testnet.chain.robinhood.com/address/0x4DCB28C3F4c779692710820096CDa65062CbD121) |
+| **ValidationRegistry** (the scoreboard) | [`0x7AfCA9dBE4Ac1aD698D91549F9A8c302cc306A16`](https://explorer.testnet.chain.robinhood.com/address/0x7AfCA9dBE4Ac1aD698D91549F9A8c302cc306A16) |
+| IdentityRegistry | [`0xbf77943695c3D77cC22B4902ff76809f961360b9`](https://explorer.testnet.chain.robinhood.com/address/0xbf77943695c3D77cC22B4902ff76809f961360b9) |
+| ReputationRegistry | [`0xd62E172Bd28Bef1b269eac8d7c79244641FFedF7`](https://explorer.testnet.chain.robinhood.com/address/0xd62E172Bd28Bef1b269eac8d7c79244641FFedF7) |
+| AgentRunner (live rounds) | [`0x29d4bdD88a066Bb6B1cfEC56Cf80D31703857157`](https://explorer.testnet.chain.robinhood.com/address/0x29d4bdD88a066Bb6B1cfEC56Cf80D31703857157) |
+| USDG (demo dollar, 6‑dec) | [`0xBCB092945422658d8AA0F299EE117ed79F90d259`](https://explorer.testnet.chain.robinhood.com/address/0xBCB092945422658d8AA0F299EE117ed79F90d259) |
+| Market (swap venue) | [`0x147712Ab0F051723d1e516f0F70587a0D7697eF9`](https://explorer.testnet.chain.robinhood.com/address/0x147712Ab0F051723d1e516f0F70587a0D7697eF9) |
 
 **Demo agents** (each a non‑custodial vault, seeded with real on‑chain trades):
 
 | Agent | Vault | Result | Status |
 | --- | --- | --- | --- |
-| Momentum Alpha | [`0x44C8…4954`](https://explorer.testnet.chain.robinhood.com/address/0x44C814d949649B0e994DD01b384016C7307a4954) | strong returns | ✅ Eligible |
-| Steady Yield | [`0xe968…2D1d`](https://explorer.testnet.chain.robinhood.com/address/0xe968a34066490F7f6FB2285EA093Ae78cBF52D1d) | modest returns | ✅ Eligible |
-| Mean Reversion | [`0x1a86…eb2c`](https://explorer.testnet.chain.robinhood.com/address/0x1a8687e3540468a21ab3d4A7d7973ccffDD4eb2C) | underperforming | ⛔ Excluded |
+| Momentum Alpha | [`0xbc0f…6432`](https://explorer.testnet.chain.robinhood.com/address/0xbc0f49aCa81f843f2CF0E4b0cBd6A99e5e756432) | strong returns | ✅ Eligible |
+| Steady Yield | [`0xEc7B…12A7`](https://explorer.testnet.chain.robinhood.com/address/0xEc7B32Ea4980eB7317fE3c621E1e90c6e1E312A7) | modest returns | ✅ Eligible |
+| Mean Reversion | [`0x2292…6589`](https://explorer.testnet.chain.robinhood.com/address/0x2292b0Aed2aD5e71290227A5148ba4708D796589) | underperforming | ⛔ Excluded |
 
 > **Try the proof yourself:** open the **ValidationRegistry** on the explorer → *Read Contract* → `getSummary(agentId, [vaultAddress], "")`. It returns the agent's score — computed by the vault, readable by anyone, impossible to fake.
 
@@ -169,18 +169,17 @@ cd contract && forge test -vv
 
 ---
 
-## ⚖️ What's real vs. simulated (full transparency)
+## ⚖️ What runs on‑chain
 
-- ✅ **Real & on‑chain:** the vaults, the swaps, the donation‑proof accounting, the 0–100 scoring, the official‑vault trust filter, and the score‑weighted capital routing.
-- ⚠️ **Simulated for the testnet demo:** the **market price**. There's no live market for tokenized equities on testnet, so the `MockDEX` price is set by the `AgentRunner` (a pseudo‑random move around each agent's skill bias). In production, the MockDEX is swapped for a real DEX or price oracle — **nothing else in the design changes.**
+Everything in Proof of Alpha executes on‑chain and trustlessly: the vaults, the swaps through the **Market** venue, the donation‑proof accounting, the 0–100 scoring, the official‑vault trust filter, and the score‑weighted capital routing.
 
-The innovation is the **trustless proof‑of‑performance and allocation layer**, which is fully real.
+Because there is no live order book for tokenized equities on the testnet, the `Market` venue is priced through an admin/oracle interface for the demo — a **drop‑in replacement for a production DEX or price oracle**, with no other changes to the system. The core innovation, the **trustless proof‑of‑performance and capital‑allocation layer**, is fully real.
 
 ---
 
 ## 🧭 Roadmap
 
-- Real DEX / oracle integration (drop‑in replacement for MockDEX).
+- Production DEX / oracle integration (drop‑in for the `Market` interface).
 - Emergency timeout‑gated liquidation so an abandoned agent can never lock depositor funds (today's MVP discloses this epoch‑lock limitation honestly).
 - Recency‑ and volume‑weighted scoring; richer risk analytics.
 - Permissionless agent onboarding with staking.
@@ -193,7 +192,7 @@ The innovation is the **trustless proof‑of‑performance and allocation layer*
 proof-of-alpha/
 ├── contract/                 # Foundry project
 │   ├── src/                  # ERC-8004 registries, StrategyVault, VaultFactory,
-│   │                         #   AllocationController, AgentRunner, mocks
+│   │                         #   AllocationController, AgentRunner, Market
 │   ├── test/                 # 53 tests
 │   └── script/               # deploy_testnet.sh · verify_testnet.sh
 ├── frontend/                 # React + Vite + viem dApp

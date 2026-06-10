@@ -18,7 +18,7 @@ VURL="https://explorer.testnet.chain.robinhood.com/api"
 # shellcheck disable=SC1091
 source deployments.txt
 
-STOCKS="[$TSLA,$AMZN,$PLTR]"
+STOCKS="[$TSLA,$AMZN,$PLTR,$NFLX,$AMD]"
 PASS=0; FAIL=0
 
 # verify <address> <path:Name> <abiEncodedConstructorArgsHex|"">
@@ -40,6 +40,8 @@ verify "$USDG" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,stri
 verify "$TSLA" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Tesla' 'TSLA' 18)"
 verify "$AMZN" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Amazon' 'AMZN' 18)"
 verify "$PLTR" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Palantir' 'PLTR' 18)"
+verify "$NFLX" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Netflix' 'NFLX' 18)"
+verify "$AMD" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'AMD' 'AMD' 18)"
 verify "$DEX" src/Market.sol:Market "$(enc 'constructor(address)' "$USDG")"
 verify "$IDENTITY" src/IdentityRegistry.sol:IdentityRegistry ""
 verify "$REPUTATION" src/ReputationRegistry.sol:ReputationRegistry "$(enc 'constructor(address)' "$IDENTITY")"
@@ -50,8 +52,8 @@ verify "$CONTROLLER" src/AllocationController.sol:AllocationController \
   "$(enc 'constructor(address,address,address,uint8,uint64)' "$USDG" "$FACTORY" "$VALIDATION" 50 1)"
 verify "$RUNNER" src/AgentRunner.sol:AgentRunner "$(enc 'constructor(address,address)' "$DEX" "$USDG")"
 
-echo "==> Verifying the 3 agent vaults (constructor args read from chain)…"
-for V in "$VAULT_MOMENTUM" "$VAULT_STEADY" "$VAULT_MEANREV"; do
+echo "==> Verifying the 5 agent vaults (constructor args read from chain)…"
+for V in "$VAULT_MOMENTUM" "$VAULT_BREAKOUT" "$VAULT_VOLATILITY" "$VAULT_STEADY" "$VAULT_MEANREV"; do
   AID=$(call "$V" 'agentId()(uint256)')
   TRADER=$(call "$V" 'trader()(address)')
   verify "$V" src/StrategyVault.sol:StrategyVault \

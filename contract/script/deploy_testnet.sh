@@ -25,7 +25,7 @@ PRICE_BASE=100000000            # 100 USDG per whole stock token
 FUND=1000000000                 # 1,000 USDG traded per demo agent
 DEX_USDG_LIQ=1000000000000      # 1,000,000 USDG liquidity in the DEX
 DEX_STOCK_LIQ=100000000000000000000000  # 100,000 stock tokens liquidity
-DEPLOYER_SEED=3000000000        # 3,000 USDG minted to deployer for seeding
+DEPLOYER_SEED=5000000000        # 5,000 USDG minted to deployer for seeding (5 agents x 1,000)
 
 # PK can be supplied via env (testing/CI); otherwise the keystore is decrypted once.
 if [ -z "${PK:-}" ]; then
@@ -84,6 +84,8 @@ USDG=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Global Dolla
 TSLA=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Tesla" "TSLA" 18);        record TSLA "$TSLA"
 AMZN=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Amazon" "AMZN" 18);       record AMZN "$AMZN"
 PLTR=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Palantir" "PLTR" 18);     record PLTR "$PLTR"
+NFLX=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Netflix" "NFLX" 18);      record NFLX "$NFLX"
+AMD=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "AMD" "AMD" 18);            record AMD "$AMD"
 
 echo "==> 2/4  Deploying market + registries + factory + runner + controller…"
 DEX=$(create src/Market.sol:Market --constructor-args "$USDG");                               record DEX "$DEX"
@@ -91,14 +93,14 @@ IDENTITY=$(create src/IdentityRegistry.sol:IdentityRegistry);                   
 REPUTATION=$(create src/ReputationRegistry.sol:ReputationRegistry --constructor-args "$IDENTITY"); record REPUTATION "$REPUTATION"
 VALIDATION=$(create src/ValidationRegistry.sol:ValidationRegistry --constructor-args "$IDENTITY"); record VALIDATION "$VALIDATION"
 FACTORY=$(create src/VaultFactory.sol:VaultFactory \
-  --constructor-args "$USDG" "$IDENTITY" "$VALIDATION" "$DEX" "[$TSLA,$AMZN,$PLTR]");          record FACTORY "$FACTORY"
+  --constructor-args "$USDG" "$IDENTITY" "$VALIDATION" "$DEX" "[$TSLA,$AMZN,$PLTR,$NFLX,$AMD]"); record FACTORY "$FACTORY"
 RUNNER=$(create src/AgentRunner.sol:AgentRunner --constructor-args "$DEX" "$USDG");            record RUNNER "$RUNNER"
 CONTROLLER=$(create src/AllocationController.sol:AllocationController \
   --constructor-args "$USDG" "$FACTORY" "$VALIDATION" 50 1);                                   record CONTROLLER "$CONTROLLER"
 
 echo "==> 3/4  Funding the DEX and handing pricing to the runner…"
 send "$USDG" "mint(address,uint256)" "$DEX" "$DEX_USDG_LIQ"
-for T in "$TSLA" "$AMZN" "$PLTR"; do send "$T" "mint(address,uint256)" "$DEX" "$DEX_STOCK_LIQ"; done
+for T in "$TSLA" "$AMZN" "$PLTR" "$NFLX" "$AMD"; do send "$T" "mint(address,uint256)" "$DEX" "$DEX_STOCK_LIQ"; done
 # The runner owns the DEX so it can move prices during a one-tx trading round.
 send "$DEX" "transferOwnership(address)" "$RUNNER"
 send "$USDG" "mint(address,uint256)" "$SENDER" "$DEPLOYER_SEED"
@@ -117,16 +119,20 @@ seed_agent() {
   echo "$VAULT"
 }
 
-echo "==> 4/4  Launching + seeding 3 demo agents (live one-tx rounds)…"
-V_MOM=$(seed_agent "$TSLA" "ipfs://momentum-alpha"  1500  5000 0); record VAULT_MOMENTUM "$V_MOM"
-V_STD=$(seed_agent "$AMZN" "ipfs://steady-yield"      400  1000 1); record VAULT_STEADY   "$V_STD"
-V_MRV=$(seed_agent "$PLTR" "ipfs://mean-reversion"   -800 -1000 2); record VAULT_MEANREV  "$V_MRV"
+echo "==> 4/4  Launching + seeding 5 demo agents (live one-tx rounds)…"
+V_MOM=$(seed_agent "$TSLA" "ipfs://momentum-alpha"     1500  5000 0); record VAULT_MOMENTUM   "$V_MOM"
+V_BRK=$(seed_agent "$NFLX" "ipfs://breakout-hunter"     1000  3000 1); record VAULT_BREAKOUT   "$V_BRK"
+V_VOL=$(seed_agent "$AMD"  "ipfs://volatility-harvester" 600  2000 2); record VAULT_VOLATILITY "$V_VOL"
+V_STD=$(seed_agent "$AMZN" "ipfs://steady-yield"         400  1000 3); record VAULT_STEADY     "$V_STD"
+V_MRV=$(seed_agent "$PLTR" "ipfs://mean-reversion"      -800 -1000 4); record VAULT_MEANREV    "$V_MRV"
 
 echo
 echo "==> Done. Eligible weights (capital-allocation gate):"
-echo "    Momentum (seed +50% -> score 100): $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_MOM")"
-echo "    Steady   (seed +10% -> score 60) : $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_STD")"
-echo "    MeanRev  (seed -10% -> score 40) : $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_MRV")  (0 = correctly excluded)"
+echo "    Momentum   (seed +50% -> score 100): $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_MOM")"
+echo "    Breakout   (seed +30% -> score 80) : $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_BRK")"
+echo "    Volatility (seed +20% -> score 70) : $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_VOL")"
+echo "    Steady     (seed +10% -> score 60) : $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_STD")"
+echo "    MeanRev    (seed -10% -> score 40) : $(read_call "$CONTROLLER" "eligibleWeight(address)(uint256)" "$V_MRV")  (0 = correctly excluded)"
 echo
 echo "Anyone can now trigger a LIVE round on-chain: runner.runEpoch(vault) — one transaction."
 echo "All addresses saved to: $OUT"
@@ -140,6 +146,8 @@ if [ -d "$FE_DIR" ]; then
   "TSLA": "$TSLA",
   "AMZN": "$AMZN",
   "PLTR": "$PLTR",
+  "NFLX": "$NFLX",
+  "AMD": "$AMD",
   "DEX": "$DEX",
   "IdentityRegistry": "$IDENTITY",
   "ReputationRegistry": "$REPUTATION",

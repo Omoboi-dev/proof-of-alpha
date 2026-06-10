@@ -40,6 +40,16 @@ const SLUG_META: Record<string, { name: string; strategy: string }> = {
     strategy:
       'Mean Reversion fades short-term dislocations, betting price returns to fair value. An underperforming epoch here demonstrates the protocol excluding weaker agents from capital.',
   },
+  'breakout-hunter': {
+    name: 'Breakout Hunter',
+    strategy:
+      'Breakout Hunter enters on confirmed range breakouts, sizing up when momentum accelerates and banking realized gains each epoch. Every fill settles on-chain inside its non-custodial vault.',
+  },
+  'volatility-harvester': {
+    name: 'Volatility Harvester',
+    strategy:
+      'Volatility Harvester monetizes sharp intraday swings, trading both directions around fair value and locking in realized P&L per epoch. Position sizing scales with measured volatility.',
+  },
 };
 
 // Risk derived from the size of realized swings (volatility proxy): bigger moves = higher risk.

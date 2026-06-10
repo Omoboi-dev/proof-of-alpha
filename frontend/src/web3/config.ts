@@ -32,6 +32,8 @@ export const SYMBOL_BY_ADDR: Record<string, string> = {
   [CONTRACTS.TSLA.toLowerCase()]: 'TSLA',
   [CONTRACTS.AMZN.toLowerCase()]: 'AMZN',
   [CONTRACTS.PLTR.toLowerCase()]: 'PLTR',
+  [CONTRACTS.NFLX.toLowerCase()]: 'NFLX',
+  [CONTRACTS.AMD.toLowerCase()]: 'AMD',
 };
 export const symbolOf = (addr: string) => SYMBOL_BY_ADDR[addr.toLowerCase()] ?? `${addr.slice(0, 6)}…`;
 

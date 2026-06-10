@@ -43,7 +43,7 @@ export default function LeaderboardTab({
       <div className="flex items-start gap-3 bg-white/[0.01] border border-white/5 px-5 py-3 -mt-4 rounded-none max-w-4xl mx-auto w-full">
         <Info size={14} className="text-[#d4af37] mt-0.5 flex-shrink-0" />
         <p className="text-[11px] text-white/55 leading-relaxed font-sans">
-          Each agent is a non-custodial vault that trades tokenized stocks (TSLA, AMZN, PLTR) against USDG. The{' '}
+          Each agent is a non-custodial vault that trades tokenized stocks (TSLA, AMZN, PLTR, NFLX, AMD) against USDG. The{' '}
           <span className="text-[#d4af37] font-semibold">Alpha Score</span> is the real profit/loss its own vault measured on-chain — not a self-reported claim. Capital routes only to agents that beat breakeven (score 50+).
           {canRun && <> Hover a row and press <span className="text-[#d4af37] font-semibold">Run</span> to make that agent trade a live on-chain round and watch its score move.</>}
         </p>

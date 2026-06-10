@@ -87,10 +87,14 @@ export function useWallet(onChange?: () => void): WalletApi {
       const accts = (await eth.request({ method: 'eth_requestAccounts' })) as string[];
       await ensureChain();
       setAddress(accts[0]);
+      localStorage.removeItem('poa.disconnected');
     } finally { setBusy(null); }
   }, [ensureChain]);
 
-  const disconnect = useCallback(() => { setAddress(null); setUsdgBalance(0); setUserShares(0); }, []);
+  const disconnect = useCallback(() => {
+    setAddress(null); setUsdgBalance(0); setUserShares(0);
+    localStorage.setItem('poa.disconnected', '1'); // remember intent so reload doesn't auto-reconnect
+  }, []);
 
   // Send a tx, wait for receipt, refresh balances, notify the app to re-read protocol data.
   const run = useCallback(async (label: string, fn: (wc: WClient, acct: `0x${string}`) => Promise<`0x${string}`>) => {
@@ -170,6 +174,20 @@ export function useWallet(onChange?: () => void): WalletApi {
       args: [vault as `0x${string}`],
     }));
   }, [run]);
+
+  // Silently restore the connection on reload: eth_accounts returns already-authorized
+  // accounts WITHOUT prompting, so a refresh keeps the wallet connected.
+  useEffect(() => {
+    const eth = getEth();
+    if (!eth) return;
+    if (localStorage.getItem('poa.disconnected')) return; // user chose to stay disconnected
+    (async () => {
+      try {
+        const accts = (await eth.request({ method: 'eth_accounts' })) as string[];
+        if (accts?.[0]) setAddress(accts[0]);
+      } catch { /* ignore — user simply isn't connected */ }
+    })();
+  }, []);
 
   // React to account/chain changes in the wallet.
   useEffect(() => {

@@ -17,11 +17,26 @@ const fmtUsd = (n: number) => {
   return `$${n.toFixed(0)}`;
 };
 
+const PAGES: Page[] = ['leaderboard', 'index', 'how-it-works', 'agent-detail'];
+
 export default function App() {
-  const [activePage, setActivePage] = useState<Page>('how-it-works');
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  // Restore the last page + selected agent on reload (so a refresh stays put, not back to home).
+  const [activePage, setActivePage] = useState<Page>(() => {
+    const saved = (typeof localStorage !== 'undefined' && localStorage.getItem('poa.page')) as Page | null;
+    return saved && PAGES.includes(saved) ? saved : 'how-it-works';
+  });
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(() =>
+    typeof localStorage !== 'undefined' ? localStorage.getItem('poa.agent') : null
+  );
   const [showContractsModal, setShowContractsModal] = useState(false);
   const [copiedContractId, setCopiedContractId] = useState<string | null>(null);
+
+  // Persist navigation so a browser refresh keeps you on the current page/agent.
+  useEffect(() => { localStorage.setItem('poa.page', activePage); }, [activePage]);
+  useEffect(() => {
+    if (selectedAgentId) localStorage.setItem('poa.agent', selectedAgentId);
+    else localStorage.removeItem('poa.agent');
+  }, [selectedAgentId]);
 
   // Live on-chain data + real injected wallet (wallet refreshes protocol after each tx).
   const protocol = useProtocol();

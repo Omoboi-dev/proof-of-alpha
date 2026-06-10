@@ -72,7 +72,7 @@ export default function App() {
     { title: 'Identity Registry', address: CONTRACTS.IdentityRegistry },
     { title: 'Reputation Registry', address: CONTRACTS.ReputationRegistry },
     { title: 'USDG (demo dollar)', address: CONTRACTS.USDG },
-    { title: 'Mock DEX', address: CONTRACTS.DEX },
+    { title: 'Market', address: CONTRACTS.DEX },
   ];
 
   return (

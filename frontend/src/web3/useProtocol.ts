@@ -126,7 +126,7 @@ async function buildAgent(vault: `0x${string}`, index: number, minScore: number)
       const symbol = symbolOf(stockAddr);
       tradedSet.add(symbol);
       const usdgAmount = Number(formatUnits((isBuy ? a.amountIn : a.amountOut) ?? 0n, USDG_DECIMALS));
-      const stockAmount = Number(formatUnits((isBuy ? a.amountOut : a.amountIn) ?? 0n, 18)); // mock stocks are 18-dec
+      const stockAmount = Number(formatUnits((isBuy ? a.amountOut : a.amountIn) ?? 0n, 18)); // stock tokens are 18-dec
       return { side: isBuy ? 'buy' : 'sell', symbol, stockAmount, usdgAmount, price: stockAmount > 0 ? usdgAmount / stockAmount : 0 } as TradeRecord;
     });
   } catch {

@@ -67,22 +67,24 @@ All contracts are **deployed and source‑verified** on Robinhood Chain (Arbitru
 
 | Contract | Address |
 | --- | --- |
-| **VaultFactory** (trust anchor) | [`0x82ead60bA0489eE66a18a18F32A8f6d9B7977Bc8`](https://explorer.testnet.chain.robinhood.com/address/0x82ead60bA0489eE66a18a18F32A8f6d9B7977Bc8) |
-| **AllocationController** (capital router) | [`0x4DCB28C3F4c779692710820096CDa65062CbD121`](https://explorer.testnet.chain.robinhood.com/address/0x4DCB28C3F4c779692710820096CDa65062CbD121) |
-| **ValidationRegistry** (the scoreboard) | [`0x7AfCA9dBE4Ac1aD698D91549F9A8c302cc306A16`](https://explorer.testnet.chain.robinhood.com/address/0x7AfCA9dBE4Ac1aD698D91549F9A8c302cc306A16) |
-| IdentityRegistry | [`0xbf77943695c3D77cC22B4902ff76809f961360b9`](https://explorer.testnet.chain.robinhood.com/address/0xbf77943695c3D77cC22B4902ff76809f961360b9) |
-| ReputationRegistry | [`0xd62E172Bd28Bef1b269eac8d7c79244641FFedF7`](https://explorer.testnet.chain.robinhood.com/address/0xd62E172Bd28Bef1b269eac8d7c79244641FFedF7) |
-| AgentRunner (live rounds) | [`0x29d4bdD88a066Bb6B1cfEC56Cf80D31703857157`](https://explorer.testnet.chain.robinhood.com/address/0x29d4bdD88a066Bb6B1cfEC56Cf80D31703857157) |
-| USDG (demo dollar, 6‑dec) | [`0xBCB092945422658d8AA0F299EE117ed79F90d259`](https://explorer.testnet.chain.robinhood.com/address/0xBCB092945422658d8AA0F299EE117ed79F90d259) |
-| Market (swap venue) | [`0x147712Ab0F051723d1e516f0F70587a0D7697eF9`](https://explorer.testnet.chain.robinhood.com/address/0x147712Ab0F051723d1e516f0F70587a0D7697eF9) |
+| **VaultFactory** (trust anchor) | [`0x0C27e641BD7bD0c8ea2BB7a42c2B69c9E5eB3F15`](https://explorer.testnet.chain.robinhood.com/address/0x0C27e641BD7bD0c8ea2BB7a42c2B69c9E5eB3F15) |
+| **AllocationController** (capital router) | [`0x651Cc510560751aD413D046c092D6285a0D37983`](https://explorer.testnet.chain.robinhood.com/address/0x651Cc510560751aD413D046c092D6285a0D37983) |
+| **ValidationRegistry** (the scoreboard) | [`0x4aC305b4ef4aEd58858E8B6f3991f301E4199708`](https://explorer.testnet.chain.robinhood.com/address/0x4aC305b4ef4aEd58858E8B6f3991f301E4199708) |
+| IdentityRegistry | [`0x8eb552223359ABD2813B73E513d696023201ED10`](https://explorer.testnet.chain.robinhood.com/address/0x8eb552223359ABD2813B73E513d696023201ED10) |
+| ReputationRegistry | [`0x1089844530DB5DefD39f523052F9BbD33f71d823`](https://explorer.testnet.chain.robinhood.com/address/0x1089844530DB5DefD39f523052F9BbD33f71d823) |
+| AgentRunner (live rounds) | [`0x97047C337dAA6EB3200eC14Af26174013D2200A9`](https://explorer.testnet.chain.robinhood.com/address/0x97047C337dAA6EB3200eC14Af26174013D2200A9) |
+| USDG (demo dollar, 6‑dec) | [`0xBb7dDDc00Eab60fcE13EfeeceD7cAa52712B17A8`](https://explorer.testnet.chain.robinhood.com/address/0xBb7dDDc00Eab60fcE13EfeeceD7cAa52712B17A8) |
+| Market (swap venue) | [`0x295fe645C6fF4267b3e7F946aEE6A5531F78AB56`](https://explorer.testnet.chain.robinhood.com/address/0x295fe645C6fF4267b3e7F946aEE6A5531F78AB56) |
 
 **Demo agents** (each a non‑custodial vault, seeded with real on‑chain trades):
 
 | Agent | Vault | Result | Status |
 | --- | --- | --- | --- |
-| Momentum Alpha | [`0xbc0f…6432`](https://explorer.testnet.chain.robinhood.com/address/0xbc0f49aCa81f843f2CF0E4b0cBd6A99e5e756432) | strong returns | ✅ Eligible |
-| Steady Yield | [`0xEc7B…12A7`](https://explorer.testnet.chain.robinhood.com/address/0xEc7B32Ea4980eB7317fE3c621E1e90c6e1E312A7) | modest returns | ✅ Eligible |
-| Mean Reversion | [`0x2292…6589`](https://explorer.testnet.chain.robinhood.com/address/0x2292b0Aed2aD5e71290227A5148ba4708D796589) | underperforming | ⛔ Excluded |
+| Momentum Alpha (TSLA) | [`0xA760…49C8`](https://explorer.testnet.chain.robinhood.com/address/0xA760eF79227B525BFd364Bc2Ee6d19F0449449C8) | score 100 · strong returns | ✅ Eligible |
+| Breakout Hunter (NFLX) | [`0x19c8…CC1A`](https://explorer.testnet.chain.robinhood.com/address/0x19c805FD9171d21c717e9f4a57FE797B8F8aCC1A) | score 80 · strong returns | ✅ Eligible |
+| Volatility Harvester (AMD) | [`0x086B…3B71`](https://explorer.testnet.chain.robinhood.com/address/0x086B95a224f577DcA8A14CC85aADf0956A9B3B71) | score 70 · solid returns | ✅ Eligible |
+| Steady Yield (AMZN) | [`0xFa87…8083`](https://explorer.testnet.chain.robinhood.com/address/0xFa872B5b6F6A21Aa8CB4FAcf74E43571b53c8083) | score 60 · modest returns | ✅ Eligible |
+| Mean Reversion (PLTR) | [`0x1237…c44f`](https://explorer.testnet.chain.robinhood.com/address/0x1237F5F1737843118C99ef906274286D6829c44f) | score 40 · underperforming | ⛔ Excluded |
 
 > **Try the proof yourself:** open the **ValidationRegistry** on the explorer → *Read Contract* → `getSummary(agentId, [vaultAddress], "")`. It returns the agent's score — computed by the vault, readable by anyone, impossible to fake.
 
@@ -147,7 +149,7 @@ forge test            # 53 tests
 ```bash
 cd contract
 cast wallet import deployer --interactive     # import a testnet key once (encrypted keystore)
-bash script/deploy_testnet.sh deployer        # deploys everything + seeds 3 agents
+bash script/deploy_testnet.sh deployer        # deploys everything + seeds 5 agents
 bash script/verify_testnet.sh                 # source-verify on Blockscout
 ```
 The deploy script auto‑writes the new addresses to `frontend/src/web3/deployed.json`, so the frontend always points at your latest deployment.

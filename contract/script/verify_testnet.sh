@@ -40,7 +40,7 @@ verify "$USDG" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,stri
 verify "$TSLA" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Tesla' 'TSLA' 18)"
 verify "$AMZN" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Amazon' 'AMZN' 18)"
 verify "$PLTR" src/mocks/MockERC20.sol:MockERC20 "$(enc 'constructor(string,string,uint8)' 'Palantir' 'PLTR' 18)"
-verify "$DEX" src/mocks/MockDEX.sol:MockDEX "$(enc 'constructor(address)' "$USDG")"
+verify "$DEX" src/Market.sol:Market "$(enc 'constructor(address)' "$USDG")"
 verify "$IDENTITY" src/IdentityRegistry.sol:IdentityRegistry ""
 verify "$REPUTATION" src/ReputationRegistry.sol:ReputationRegistry "$(enc 'constructor(address)' "$IDENTITY")"
 verify "$VALIDATION" src/ValidationRegistry.sol:ValidationRegistry "$(enc 'constructor(address)' "$IDENTITY")"

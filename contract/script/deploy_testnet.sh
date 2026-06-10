@@ -52,10 +52,16 @@ create() {
   echo "  !! deploy failed after retries: $what" >&2; exit 1
 }
 send() {
-  local i
+  local i pre post
+  # Baseline nonce: a mined tx advances it by exactly 1.
+  pre=$(cast nonce "$SENDER" --rpc-url "$RPC" 2>/dev/null)
   for i in 1 2 3 4 5 6; do
     cast send "$@" --rpc-url "$RPC" --private-key "$PK" >/dev/null 2>&1 && return 0
     sleep 3
+    # Lost-response guard: if the public RPC dropped the reply but the tx actually mined,
+    # the account nonce will have advanced — so don't re-send (which would just revert).
+    post=$(cast nonce "$SENDER" --rpc-url "$RPC" 2>/dev/null)
+    if [ -n "$pre" ] && [ -n "$post" ] && [ "$post" -gt "$pre" ]; then return 0; fi
   done
   echo "  !! tx failed after retries: $*" >&2; exit 1
 }
@@ -79,8 +85,8 @@ TSLA=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Tesla" "TSLA
 AMZN=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Amazon" "AMZN" 18);       record AMZN "$AMZN"
 PLTR=$(create src/mocks/MockERC20.sol:MockERC20 --constructor-args "Palantir" "PLTR" 18);     record PLTR "$PLTR"
 
-echo "==> 2/4  Deploying DEX + registries + factory + runner + controller…"
-DEX=$(create src/mocks/MockDEX.sol:MockDEX --constructor-args "$USDG");                       record DEX "$DEX"
+echo "==> 2/4  Deploying market + registries + factory + runner + controller…"
+DEX=$(create src/Market.sol:Market --constructor-args "$USDG");                               record DEX "$DEX"
 IDENTITY=$(create src/IdentityRegistry.sol:IdentityRegistry);                                 record IDENTITY "$IDENTITY"
 REPUTATION=$(create src/ReputationRegistry.sol:ReputationRegistry --constructor-args "$IDENTITY"); record REPUTATION "$REPUTATION"
 VALIDATION=$(create src/ValidationRegistry.sol:ValidationRegistry --constructor-args "$IDENTITY"); record VALIDATION "$VALIDATION"

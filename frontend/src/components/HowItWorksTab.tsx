@@ -65,7 +65,7 @@ export default function HowItWorksTab({ agents, stats, setActivePage }: HowItWor
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             <div className="animate-fade-up inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10" style={{ animationDelay: '0ms' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-pulse" />
-              <span className="font-mono text-[9px] font-bold text-[#d4af37] uppercase tracking-widest">ERC-8004 · Robinhood Chain Testnet</span>
+              <span className="font-mono text-[9px] font-bold text-[#d4af37] uppercase tracking-widest pt-0.5">Trustless Proof of Performance</span>
             </div>
 
             <h1 className="mt-6 text-4xl md:text-[64px] font-serif serif-display font-bold text-white tracking-tight leading-[1.02] select-none">

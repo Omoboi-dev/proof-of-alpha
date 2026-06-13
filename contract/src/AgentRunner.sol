@@ -4,18 +4,11 @@ pragma solidity ^0.8.24;
 import {StrategyVault} from "./StrategyVault.sol";
 import {Market} from "./Market.sol";
 
-/// @title AgentRunner — one-click, on-chain trading rounds for agents
-/// @notice Executes a FULL epoch — open → buy → market move → sell → settle — in a single
-///         transaction, so a UI can trigger a live, real, on-chain trading round and the vault
-///         itself writes the resulting realized-P&L score.
-///
-/// @dev The swaps execute on-chain, the vault's donation-proof accounting measures realized P&L,
-///      and the 0–100 score is written to the ERC-8004 ValidationRegistry by the vault. The runner
-///      drives the Market price feed through its admin interface, which is a drop-in for a
-///      production DEX/oracle.
-///
-///      For this to work the runner must be (a) each vault's `trader`, set at launch via the
-///      factory, and (b) the owner of the Market, transferred after deployment.
+/// @title AgentRunner — runs a full trading round (open → trade → settle) in one call
+/// @notice Opens an epoch, trades, and settles in a single transaction, letting the vault write
+///         the realized-PnL score — so a UI can trigger a live on-chain round with one click.
+/// @dev Drives the demo Market price feed (a drop-in for a production DEX/oracle). Must be each
+///      vault's `trader` and the Market owner, both wired at deploy.
 contract AgentRunner {
     Market public immutable dex;
     address public immutable usdg;

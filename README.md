@@ -1,38 +1,37 @@
-<div align="center">
+# Proof of Alpha
 
-# 🏆 Proof of Alpha
+A trustless leaderboard and capital index for AI trading agents. Money flows to the agents
+with an on-chain, verifiable track record, automatically, without a middleman deciding who's
+good for it.
 
-### The trustless leaderboard & capital index for AI trading agents
+Live demo: https://proof-of-alpha-one.vercel.app/
 
-**Capital flows to AI traders with on-chain‑proven, impossible‑to‑fake track records — automatically, with no middleman.**
-
-### [▶ Launch the Live Demo](https://proof-of-alpha-one.vercel.app/)
-
-[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-proof--of--alpha-d4af37?style=for-the-badge)](https://proof-of-alpha-one.vercel.app/)
-
-[![Chain](https://img.shields.io/badge/Robinhood_Chain-Testnet_46630-d4af37)](https://explorer.testnet.chain.robinhood.com)
-[![Standard](https://img.shields.io/badge/ERC--8004-Trustless_Agents-1f6feb)](https://eips.ethereum.org/EIPS/eip-8004)
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636)](https://soliditylang.org)
-[![Tests](https://img.shields.io/badge/Foundry_tests-53_passing-2ea043)](#-testing)
-[![License](https://img.shields.io/badge/License-MIT-blue)](#-license)
-
-</div>
-
----
+Built for the Arbitrum buildathon, on top of [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004)
+and deployed on Robinhood Chain testnet.
 
 ## The problem
 
-When an AI trading agent claims *"I made 50% returns,"* you have to **trust** it — a screenshot, a dashboard, a backtest. All forgeable. There's no way for capital to *trustlessly* find the genuinely good agents, so money follows hype or pays a middleman to vouch.
+When an AI trading agent tells you it made 50%, you have no way to check. A screenshot, a
+dashboard, a backtest, all of it is forgeable. So capital follows hype, or it pays someone to
+vouch for an agent. There's no way for money to find the genuinely good agents on its own, and
+there's no neutral, shared record of who has actually performed.
 
-## The breakthrough: **the vault is the validator**
+This is only getting worse as more autonomous agents start managing money. The agents can act on
+their own, but the trust layer underneath them is still screenshots and promises.
 
-In Proof of Alpha, an agent can only trade **inside a non‑custodial vault**. The vault watches every trade, computes the agent's **real, realized profit & loss on‑chain**, and writes a 0–100 score to the [ERC‑8004](https://eips.ethereum.org/EIPS/eip-8004) Validation Registry **itself**.
+## The idea: the vault is the validator
 
-A score isn't a claim — it's a *measurement*. The agent never touches the scorecard. **It's impossible to fake by construction.** Then a pooled index reads those scores and routes capital **only** to agents that earned it; underperformers get nothing — decided by the contract, not a human.
+In Proof of Alpha an agent can only trade *inside a non-custodial vault*. The vault sees every
+trade, computes the agent's real realized profit and loss on-chain, and writes a 0–100 score to
+the ERC-8004 Validation Registry itself.
 
-> This is the *"index fund for AI traders,"* built on a trustless, standards‑based proof layer that everyone else hand‑waves.
+That score isn't a claim, it's a measurement. The agent never touches its own scorecard, so
+there's nothing to fake. A pooled index then reads those scores and routes capital only to the
+agents that earned it. The underperformers get nothing, and that call is made by the contract,
+not a person.
 
----
+It's essentially an index fund for AI traders, built on a proof layer that actually checks the
+performance instead of taking it on faith.
 
 ## How it works
 
@@ -47,167 +46,254 @@ A score isn't a claim — it's a *measurement*. The agent never touches the scor
                                           │  ERC-8004 Validation   │  0–100 score,
                                           │       Registry         │  unfakeable
                                           └───────────┬────────────┘
-                                                      │ reads scores (filtered to official vaults)
+                                                      │ reads scores (only official vaults)
                                                       ▼
    Depositors → USDG → ┌────────────────────────────────────────┐
-                       │           AllocationController         │ routes capital,
-                       │  score-weighted · gated · donation-proof│ excludes the weak
+                       │           AllocationController          │ routes capital,
+                       │  score-weighted · gated · donation-proof│ skips the weak
                        └────────────────────────────────────────┘
 ```
 
-1. **Trade in a non‑custodial vault.** The agent swaps USDG ⇄ tokenized stocks. It can trade your funds but has **no path to withdraw them to itself**.
-2. **The vault scores its own P&L.** Each *epoch* (one round: start in cash → trade → back to cash) it computes realized P&L and writes the score. No oracle, no self‑reporting, **donation‑proof** (only realized trade legs count).
-3. **Capital routes to winners.** A pooled index deploys USDG weighted by score, and **only** to official vaults above the quality bar with a real track record.
+1. **The agent trades in a non-custodial vault.** It swaps USDG for tokenized stocks and back.
+   It can move your funds around to trade, but there's no path for it to withdraw them to itself.
+2. **The vault scores its own P&L.** Each epoch (one round: start in cash, trade, end in cash) it
+   computes realized P&L and writes the score. No oracle, no self-reporting, and donation-proof,
+   since only realized trade legs count toward the number.
+3. **Capital goes to the agents that earned it.** A pooled index deploys USDG weighted by score,
+   and only to official vaults that clear the quality bar and have a real track record.
 
----
+## What's in here
 
-## 🔴 Live on Robinhood Chain Testnet
+- **ERC-8004 registries.** Identity (agent NFTs), Reputation (client feedback), and Validation
+  (the trustless scoreboard).
+- **StrategyVault**, the validator. Internal accounting keeps scoring and share pricing
+  donation-proof, and the trader key can only move funds between USDG and whitelisted stocks,
+  never out of the vault.
+- **VaultFactory**, the trust anchor. It marks vaults as `isOfficialVault`, so consumers only
+  ever count scores from genuine vaults and the "name yourself validator" loophole is closed.
+- **AllocationController**, a pooled USDG index with NAV-priced shares, score-weighted routing,
+  minimum-score and minimum-track-record gates, and permissionless exits.
+- **AgentRunner**, which runs a full trading round (open, buy, market move, sell, settle) in a
+  single transaction, so an agent can trade live and on-chain with one click.
+- **Market**, an oracle-priced swap venue between USDG and the tokenized stocks, admin-gated so
+  outsiders can't move quotes to grief a score.
+- **A React frontend** with the live leaderboard, each agent's real trade history, the capital
+  index with deposit and withdraw, an operator allocate panel, and a one-click Run button.
 
-All contracts are **deployed and source‑verified** on Robinhood Chain (Arbitrum Orbit L2, chainId **46630**).
+## The trust model
+
+This is the part that matters most. ERC-8004 registries are open by design, so anyone can name
+themselves a validator and post a fake `100`. Proof of Alpha defends against that on the consumer
+side: the AllocationController and the leaderboard only ever read a score whose validator is an
+official vault from the VaultFactory, filtered to that one vault. A self-reported score can sit in
+the registry, but nothing in the system will act on it. Put that together with the vault's
+donation-proof accounting and you get a performance number that can't be gamed.
+
+## Security and design decisions
+
+The system was written to assume an adversarial public testnet, and the test suite encodes that.
+The main defenses:
+
+- **Donation-proof accounting.** Scoring and share pricing read the vault's internal ledger, not
+  `balanceOf`, so anyone can transfer tokens straight into a vault and it changes nothing. Only
+  realized trade legs move the P&L.
+- **Ring-fenced trading.** An epoch can only ever spend the capital the vault accounted for at the
+  start. Donated USDG can't be deployed, and donated stock can't be sold, so neither can sneak
+  into a score.
+- **Official-vault filter.** Consumers ignore any score whose validator isn't a vault this
+  factory deployed, which closes the "name yourself validator" loophole.
+- **Track-record and quality gates.** A vault has to have settled at least one real epoch and
+  clear a minimum score before the index will route capital to it, so a single lucky round or a
+  brand-new agent can't attract money.
+- **No self-rating.** The reputation registry blocks the owner, the operational wallet, and any
+  approved operator from rating their own agent.
+- **Bounded, ascending candidate lists.** Allocation takes a caller-supplied, strictly ascending
+  list of vaults, which guarantees uniqueness and keeps an unbounded set from being able to
+  gas-brick the call.
+
+A known limitation, disclosed rather than hidden: while an epoch is open the vault is locked, so
+an abandoned agent could leave depositor capital stuck until the round is settled. Timeout-gated
+liquidation is on the roadmap below.
+
+## Live on Robinhood Chain testnet
+
+Everything is deployed and source-verified on Robinhood Chain, an Arbitrum Orbit L2, chain id 46630.
 
 | Contract | Address |
 | --- | --- |
-| **VaultFactory** (trust anchor) | [`0x0C27e641BD7bD0c8ea2BB7a42c2B69c9E5eB3F15`](https://explorer.testnet.chain.robinhood.com/address/0x0C27e641BD7bD0c8ea2BB7a42c2B69c9E5eB3F15) |
-| **AllocationController** (capital router) | [`0x651Cc510560751aD413D046c092D6285a0D37983`](https://explorer.testnet.chain.robinhood.com/address/0x651Cc510560751aD413D046c092D6285a0D37983) |
-| **ValidationRegistry** (the scoreboard) | [`0x4aC305b4ef4aEd58858E8B6f3991f301E4199708`](https://explorer.testnet.chain.robinhood.com/address/0x4aC305b4ef4aEd58858E8B6f3991f301E4199708) |
+| VaultFactory (the trust anchor) | [`0x0C27e641BD7bD0c8ea2BB7a42c2B69c9E5eB3F15`](https://explorer.testnet.chain.robinhood.com/address/0x0C27e641BD7bD0c8ea2BB7a42c2B69c9E5eB3F15) |
+| AllocationController (capital router) | [`0x651Cc510560751aD413D046c092D6285a0D37983`](https://explorer.testnet.chain.robinhood.com/address/0x651Cc510560751aD413D046c092D6285a0D37983) |
+| ValidationRegistry (the scoreboard) | [`0x4aC305b4ef4aEd58858E8B6f3991f301E4199708`](https://explorer.testnet.chain.robinhood.com/address/0x4aC305b4ef4aEd58858E8B6f3991f301E4199708) |
 | IdentityRegistry | [`0x8eb552223359ABD2813B73E513d696023201ED10`](https://explorer.testnet.chain.robinhood.com/address/0x8eb552223359ABD2813B73E513d696023201ED10) |
 | ReputationRegistry | [`0x1089844530DB5DefD39f523052F9BbD33f71d823`](https://explorer.testnet.chain.robinhood.com/address/0x1089844530DB5DefD39f523052F9BbD33f71d823) |
 | AgentRunner (live rounds) | [`0x97047C337dAA6EB3200eC14Af26174013D2200A9`](https://explorer.testnet.chain.robinhood.com/address/0x97047C337dAA6EB3200eC14Af26174013D2200A9) |
-| USDG (demo dollar, 6‑dec) | [`0xBb7dDDc00Eab60fcE13EfeeceD7cAa52712B17A8`](https://explorer.testnet.chain.robinhood.com/address/0xBb7dDDc00Eab60fcE13EfeeceD7cAa52712B17A8) |
+| USDG (demo dollar, 6 decimals) | [`0xBb7dDDc00Eab60fcE13EfeeceD7cAa52712B17A8`](https://explorer.testnet.chain.robinhood.com/address/0xBb7dDDc00Eab60fcE13EfeeceD7cAa52712B17A8) |
 | Market (swap venue) | [`0x295fe645C6fF4267b3e7F946aEE6A5531F78AB56`](https://explorer.testnet.chain.robinhood.com/address/0x295fe645C6fF4267b3e7F946aEE6A5531F78AB56) |
 
-**Demo agents** (each a non‑custodial vault, seeded with real on‑chain trades):
+The five demo agents, each a non-custodial vault seeded with real on-chain trades:
 
 | Agent | Vault | Result | Status |
 | --- | --- | --- | --- |
-| Momentum Alpha (TSLA) | [`0xA760…49C8`](https://explorer.testnet.chain.robinhood.com/address/0xA760eF79227B525BFd364Bc2Ee6d19F0449449C8) | score 100 · strong returns | ✅ Eligible |
-| Breakout Hunter (NFLX) | [`0x19c8…CC1A`](https://explorer.testnet.chain.robinhood.com/address/0x19c805FD9171d21c717e9f4a57FE797B8F8aCC1A) | score 80 · strong returns | ✅ Eligible |
-| Volatility Harvester (AMD) | [`0x086B…3B71`](https://explorer.testnet.chain.robinhood.com/address/0x086B95a224f577DcA8A14CC85aADf0956A9B3B71) | score 70 · solid returns | ✅ Eligible |
-| Steady Yield (AMZN) | [`0xFa87…8083`](https://explorer.testnet.chain.robinhood.com/address/0xFa872B5b6F6A21Aa8CB4FAcf74E43571b53c8083) | score 60 · modest returns | ✅ Eligible |
-| Mean Reversion (PLTR) | [`0x1237…c44f`](https://explorer.testnet.chain.robinhood.com/address/0x1237F5F1737843118C99ef906274286D6829c44f) | score 40 · underperforming | ⛔ Excluded |
+| Momentum Alpha (TSLA) | [`0xA760…49C8`](https://explorer.testnet.chain.robinhood.com/address/0xA760eF79227B525BFd364Bc2Ee6d19F0449449C8) | score 100, strong returns | Eligible |
+| Breakout Hunter (NFLX) | [`0x19c8…CC1A`](https://explorer.testnet.chain.robinhood.com/address/0x19c805FD9171d21c717e9f4a57FE797B8F8aCC1A) | score 80, strong returns | Eligible |
+| Volatility Harvester (AMD) | [`0x086B…3B71`](https://explorer.testnet.chain.robinhood.com/address/0x086B95a224f577DcA8A14CC85aADf0956A9B3B71) | score 70, solid returns | Eligible |
+| Steady Yield (AMZN) | [`0xFa87…8083`](https://explorer.testnet.chain.robinhood.com/address/0xFa872B5b6F6A21Aa8CB4FAcf74E43571b53c8083) | score 60, modest returns | Eligible |
+| Mean Reversion (PLTR) | [`0x1237…c44f`](https://explorer.testnet.chain.robinhood.com/address/0x1237F5F1737843118C99ef906274286D6829c44f) | score 40, underperforming | Excluded |
 
-> **Try the proof yourself:** open the **ValidationRegistry** on the explorer → *Read Contract* → `getSummary(agentId, [vaultAddress], "")`. It returns the agent's score — computed by the vault, readable by anyone, impossible to fake.
+You can check a score yourself: open the ValidationRegistry on the explorer, go to Read Contract,
+and call `getSummary(agentId, [vaultAddress], "")`. It returns the score the vault computed.
+Anyone can read it, nobody can fake it.
 
----
-
-## ✨ Features
-
-- **ERC‑8004 registries** — Identity (agent NFTs), Reputation (client feedback), Validation (the trustless scoreboard).
-- **Non‑custodial StrategyVault** — *the validator.* Internal accounting makes scoring & share pricing **donation‑proof**; the trader key can move funds only between USDG and whitelisted stocks, never out.
-- **VaultFactory** — the **trust anchor**: marks vaults as `isOfficialVault`, so consumers only ever count scores from genuine vaults (closing the "name yourself validator" loophole).
-- **AllocationController** — a pooled USDG index. NAV‑priced shares, score‑weighted routing, **minimum‑score + minimum‑track‑record gates**, permissionless exits.
-- **AgentRunner** — runs a full trading round (open → buy → market move → sell → settle) in **one transaction**, so agents trade **live, on‑chain, with one click**.
-- **Polished React dApp** — live leaderboard, per‑agent **real trade history**, the capital index with deposit/withdraw, an operator allocate panel, and a one‑click **Run** to make an agent trade on demand.
-
----
-
-## 🔒 Trust model (the single most important idea)
-
-ERC‑8004 registries are **open by design** — anyone can name *themselves* a validator and post a fake `100`. Proof of Alpha defends against this on the **consumer** side:
-
-> The `AllocationController` and the leaderboard only ever read a score whose validator is an **official vault** from `VaultFactory`, filtered to that one vault. A self‑reported score is **structurally excluded** — it can exist in the registry, but nothing in the system will ever act on it.
-
-Combined with the vault's donation‑proof internal accounting, the result is a performance number that **cannot be gamed**.
-
----
-
-## 🛠️ Tech stack
+## Tech stack
 
 | Layer | Stack |
 | --- | --- |
-| Contracts | Solidity 0.8.24 · Foundry · OpenZeppelin · `via_ir` |
-| Frontend | React 19 · Vite · TypeScript · Tailwind 4 · **viem** · lucide |
-| Chain | Robinhood Chain Testnet (Arbitrum Orbit L2, chainId 46630) · USDG base asset |
+| Contracts | Solidity 0.8.24, Foundry, OpenZeppelin, `via_ir` |
+| Frontend | React 19, Vite, TypeScript, Tailwind 4, viem, lucide |
+| Chain | Robinhood Chain testnet (Arbitrum Orbit L2, chain id 46630), USDG base asset |
 
----
+## Running it locally
 
-## 🚀 Run it locally
+You'll need [Foundry](https://book.getfoundry.sh/getting-started/installation) (`forge`, `cast`),
+Node.js 18+, and a wallet with Robinhood Chain testnet ETH from the
+[faucet](https://faucet.testnet.chain.robinhood.com).
 
-### Prerequisites
-- [Foundry](https://book.getfoundry.sh/getting-started/installation) (`forge`, `cast`)
-- Node.js 18+
-- A wallet with Robinhood Chain testnet ETH ([faucet](https://faucet.testnet.chain.robinhood.com))
+The frontend reads the live deployment out of the box:
 
-### Frontend (reads the live deployment out of the box)
 ```bash
 cd frontend
 npm install
 npm run dev          # http://localhost:3000
 ```
-The app reads contract addresses from `frontend/src/web3/deployed.json`, which already points at the live deployment above. Connect a wallet, use the in‑app faucet to mint demo USDG, then deposit, allocate, and **Run** live trading rounds.
 
-### Contracts
+It pulls contract addresses from `frontend/src/web3/deployed.json`, which already points at the
+live deployment above. Connect a wallet, mint some demo USDG with the in-app faucet, then deposit,
+allocate, and run live trading rounds.
+
+For the contracts:
+
 ```bash
 cd contract
 forge build
 forge test            # 53 tests
 ```
 
-### Deploy your own (Robinhood Chain testnet)
-> ⚠️ `forge script` cannot fork chain 46630 in Foundry 1.5.x, so deployment is driven by a `forge create` + `cast` bash script (with retries for the public RPC).
+To deploy your own copy on Robinhood Chain testnet:
 
 ```bash
 cd contract
 cast wallet import deployer --interactive     # import a testnet key once (encrypted keystore)
-bash script/deploy_testnet.sh deployer        # deploys everything + seeds 5 agents
+bash script/deploy_testnet.sh deployer        # deploys everything and seeds 5 agents
 bash script/verify_testnet.sh                 # source-verify on Blockscout
 ```
-The deploy script auto‑writes the new addresses to `frontend/src/web3/deployed.json`, so the frontend always points at your latest deployment.
 
----
+The deploy script writes the new addresses straight into `frontend/src/web3/deployed.json`, so the
+frontend always points at your latest deployment. Note that `forge script` can't fork chain 46630
+in Foundry 1.5.x, which is why deployment runs through a `forge create` + `cast` bash script with
+retries for the public RPC. `DeployDemo.s.sol` is kept for local or forkable chains where
+`forge script` works normally.
 
-##  Testing
+## Tests
 
-**53 Foundry tests**, multiple self‑audits. Highlights:
-- Donation attacks (USDG & stock) can't inflate a score or a share price.
-- First‑deposit share‑inflation and dust‑griefing are neutralized by internal accounting.
-- A rogue self‑validation is **excluded** once a summary is filtered to the real vault validator.
-- End‑to‑end: an agent's realized profit flows back to index depositors.
-- `AgentRunner` executes a full epoch in one transaction and the vault writes the score.
+53 Foundry tests, plus a few rounds of self-auditing. By file:
+
+- **Registries.t.sol** covers access control across the three registries and the trust filter,
+  including the case where a rogue self-validation is excluded once the summary is filtered to the
+  real vault validator.
+- **StrategyVault.t.sol** is the adversarial suite: USDG and stock donations can't inflate a score
+  or a share price, first-deposit share inflation and dust griefing are neutralized, and a
+  depositor still recovers their fair principal after an attack.
+- **AgentRunner.t.sol** checks that a full epoch runs in one transaction and the vault writes the
+  expected score for a win and for a loss.
+- **VaultFactory.t.sol** checks the official-vault wiring and that a self-deployed look-alike vault
+  is correctly treated as unofficial.
+- **AllocationController.t.sol** checks score-weighted routing, the eligibility gates, and that an
+  agent's realized profit flows all the way back to an index depositor.
 
 ```bash
 cd contract && forge test -vv
 ```
 
----
+## What actually runs on-chain
 
-## ⚖️ What runs on‑chain
+The vaults, the swaps through the Market venue, the donation-proof accounting, the 0–100 scoring,
+the official-vault trust filter, and the score-weighted capital routing all run on-chain.
 
-Everything in Proof of Alpha executes on‑chain and trustlessly: the vaults, the swaps through the **Market** venue, the donation‑proof accounting, the 0–100 scoring, the official‑vault trust filter, and the score‑weighted capital routing.
+Since there's no live order book for tokenized equities on the testnet, the Market venue is priced
+through an admin/oracle interface for the demo. That's a drop-in for a production DEX or price
+oracle, and nothing else in the system changes when you swap it out. The core of the project, the
+trustless proof-of-performance and capital-allocation layer, is fully real.
 
-Because there is no live order book for tokenized equities on the testnet, the `Market` venue is priced through an admin/oracle interface for the demo — a **drop‑in replacement for a production DEX or price oracle**, with no other changes to the system. The core innovation, the **trustless proof‑of‑performance and capital‑allocation layer**, is fully real.
+## Roadmap
 
----
+**Production price source.** Replace the admin-priced Market with a real DEX or price oracle behind
+the same `IMarket` interface. Nothing else in the system has to change, since the vault never
+trusts a price for scoring, only for executing a swap.
 
-##  Roadmap
+**Timeout-gated liquidation.** Add a safety valve so that if an agent abandons an open epoch, the
+position can be force-settled after a timeout and depositors are never locked out. This removes the
+one limitation the current MVP discloses honestly.
 
-- Production DEX / oracle integration (drop‑in for the `Market` interface).
-- Emergency timeout‑gated liquidation so an abandoned agent can never lock depositor funds (today's MVP discloses this epoch‑lock limitation honestly).
-- Recency‑ and volume‑weighted scoring; richer risk analytics.
-- Permissionless agent onboarding with staking.
+**Richer scoring.** Move beyond a single per-epoch percent return to recency-weighted and
+volume-weighted scores, plus risk-adjusted metrics like drawdown and volatility, so the leaderboard
+rewards consistency rather than one lucky round.
 
----
+**Permissionless onboarding with staking.** Let anyone launch an agent by staking, so there's
+real skin in the game and spam or griefing agents have a cost. Slashing ties bad behavior back to
+the stake.
 
-## 📂 Repository layout
+**Cross-market agents.** Whitelist more tradable assets per vault and let an agent allocate across
+several at once, so strategies aren't limited to a single ticker.
+
+**Multi-chain deployment.** The contracts are standard EVM and chain-agnostic, so the same proof
+layer can run on other rollups and aggregate reputation across them.
+
+## Repository layout
 
 ```
 proof-of-alpha/
-├── contract/                 # Foundry project
-│   ├── src/                  # ERC-8004 registries, StrategyVault, VaultFactory,
-│   │                         #   AllocationController, AgentRunner, Market
-│   ├── test/                 # 53 tests
-│   └── script/               # deploy_testnet.sh · verify_testnet.sh
-├── frontend/                 # React + Vite + viem dApp
-│   └── src/web3/             # chain config, ABIs, hooks, deployed.json
-└── ARCHITECTURE.md           # deeper technical spec
+├── contract/                          # Foundry project: all on-chain code
+│   ├── foundry.toml                   # solc 0.8.24, via_ir, optimizer, RPC + verifier config
+│   ├── src/
+│   │   ├── IdentityRegistry.sol       # ERC-8004 Identity: agents as ERC-721 NFTs
+│   │   ├── ReputationRegistry.sol     # ERC-8004 Reputation: client feedback signals
+│   │   ├── ValidationRegistry.sol     # ERC-8004 Validation: the 0–100 scoreboard
+│   │   ├── StrategyVault.sol          # the validator: non-custodial vault + epoch scoring
+│   │   ├── VaultFactory.sol           # launches official vaults; the trust anchor
+│   │   ├── AllocationController.sol    # pooled USDG index; score-weighted routing
+│   │   ├── AgentRunner.sol            # runs a full trading round in one transaction
+│   │   ├── Market.sol                 # oracle-priced swap venue (USDG <-> stocks)
+│   │   ├── interfaces/                # IIdentityRegistry, IReputationRegistry,
+│   │   │                              #   IValidationRegistry, IMarket
+│   │   └── mocks/MockERC20.sol        # mintable demo USDG and tokenized stocks
+│   ├── test/                          # 53 Foundry tests
+│   │   ├── Registries.t.sol           # registry access control + the trust filter
+│   │   ├── StrategyVault.t.sol        # donation / inflation / griefing attacks
+│   │   ├── AgentRunner.t.sol          # one-transaction epoch + scoring
+│   │   ├── VaultFactory.t.sol         # official-vault wiring and trust anchor
+│   │   └── AllocationController.t.sol # score-weighted routing + profit flow
+│   └── script/
+│       ├── deploy_testnet.sh          # forge create + cast deploy (seeds 5 agents)
+│       ├── verify_testnet.sh          # source-verify every contract on Blockscout
+│       └── DeployDemo.s.sol           # forge-script deploy for local / forkable chains
+├── frontend/                          # React + Vite + viem dApp
+│   ├── src/
+│   │   ├── App.tsx                    # top-level layout and tab routing
+│   │   ├── components/                # Header, Footer, LeaderboardTab, AgentDetailTab,
+│   │   │                              #   IndexAllocationTab, HowItWorksTab
+│   │   ├── web3/
+│   │   │   ├── config.ts              # chain config, explorer URLs, token symbols
+│   │   │   ├── abis.ts                # contract ABIs
+│   │   │   ├── deployed.json          # live contract addresses (read by the app)
+│   │   │   ├── useWallet.ts           # connect / reconnect / faucet
+│   │   │   └── useProtocol.ts         # contract reads and writes
+│   │   └── types.ts                   # shared TypeScript types
+│   └── index.html
+├── ARCHITECTURE.md                    # deeper technical notes on the design
+├── IMPLEMENTATION.md                  # build notes and decisions
+└── LICENSE                            # MIT
 ```
 
----
+## License
 
-## 📜 License
-
-MIT — see [LICENSE](LICENSE).
-
-<div align="center">
-<sub>Built for the Arbitrum buildathon · ERC‑8004 Trustless Agents · Robinhood Chain</sub>
-</div>
+MIT, see [LICENSE](LICENSE).
